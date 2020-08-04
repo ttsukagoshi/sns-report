@@ -455,6 +455,7 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     // If the value returned for getLatestDate_() is null, i.e., there are no previous dates recorded in targetSheet,
     // latestDate will be Dec 31 of the previous year of targetYear
     let latestDate = (getLatestDate_(targetSheet, 1) ? getLatestDate_(targetSheet, 1) : new Date(targetYear - 1, 11, 31)); // Assuming that the date is recorded on column A of the targetSheet.
+    console.log(latestDate);//////////////////////////////////////////
     startDateObj = new Date(latestDate.setDate(latestDate.getDate() + 1));
     // Setting parameters for youtubeAnalyticsReportsQuery_()
     let startDate = formattedDateAnalytics_(startDateObj);
@@ -918,7 +919,7 @@ function getLatestMonth_(sheet, columnNum, rowOffset = 1) {
  * @returns {Date}
  */
 function yMd2Date_(yMd) {
-  let newDate = new Date(yMd.slice(0, 4), yMd.slice(5, 7), yMd.slice(-2));
+  let newDate = new Date(yMd.slice(0, 4), parseInt(yMd.slice(5, 7)) - 1, yMd.slice(-2));
   return newDate;
 }
 
