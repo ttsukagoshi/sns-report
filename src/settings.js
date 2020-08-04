@@ -1,3 +1,25 @@
+// MIT License
+// 
+// Copyright (c) 2020 Taro TSUKAGOSHI
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 /**
  * Prompt to set intial settings
  */
@@ -48,22 +70,22 @@ function toBoolean_(stringBoolean) {
  */
 function setup_(ui, currentSettings = {}) {
   try {
-    // Client ID
-    let promptClientId = 'Client ID: OAuth 2.0 client ID for this script/spreadsheet. See https://developers.google.com/youtube/reporting/guides/registering_an_application';
-    promptClientId += (currentSettings.clientId ? `\n\nCurrent Value: ${currentSettings.clientId}` : '');
-    let responseClientId = ui.prompt(promptClientId, ui.ButtonSet.OK_CANCEL);
-    if (responseClientId.getSelectedButton() !== ui.Button.OK) {
+    // YouTube Client ID
+    let promptYtClientId = 'YouTube Client ID: OAuth 2.0 client ID for this script/spreadsheet. See https://developers.google.com/youtube/reporting/guides/registering_an_application';
+    promptYtClientId += (currentSettings.ytClientId ? `\n\nCurrent Value: ${currentSettings.ytClientId}` : '');
+    let responseYtClientId = ui.prompt(promptYtClientId, ui.ButtonSet.OK_CANCEL);
+    if (responseYtClientId.getSelectedButton() !== ui.Button.OK) {
       throw new Error('Canceled.');
     }
-    let clientId = responseClientId.getResponseText();
+    let ytClientId = responseYtClientId.getResponseText();
     // Client Secret
-    let promptClientSecret = 'Client Secret: OAuth 2.0 client secret for this script/spreadsheet. See https://developers.google.com/youtube/reporting/guides/registering_an_application';
-    promptClientSecret += (currentSettings.clientSecret ? `\n\nCurrent Value: ${currentSettings.clientSecret}` : '');
-    let responseClientSecret = ui.prompt(promptClientSecret, ui.ButtonSet.OK_CANCEL);
-    if (responseClientSecret.getSelectedButton() !== ui.Button.OK) {
+    let promptYtClientSecret = 'YouTube Client Secret: OAuth 2.0 client secret for this script/spreadsheet. See https://developers.google.com/youtube/reporting/guides/registering_an_application';
+    promptYtClientSecret += (currentSettings.ytClientSecret ? `\n\nCurrent Value: ${currentSettings.ytClientSecret}` : '');
+    let responseYtClientSecret = ui.prompt(promptYtClientSecret, ui.ButtonSet.OK_CANCEL);
+    if (responseYtClientSecret.getSelectedButton() !== ui.Button.OK) {
       throw new Error('Canceled.');
     }
-    var clientSecret = responseClientSecret.getResponseText();
+    var ytClientSecret = responseYtClientSecret.getResponseText();
     // Drive Folder ID
     let promptDriveFolderId = 'Drive Folder ID: The workspace Google Drive folder ID that all analytics spreadsheets are to be stored in.';
     promptDriveFolderId += (currentSettings.driveFolderId ? `\n\nCurrent Value: ${currentSettings.driveFolderId}` : '');
@@ -90,8 +112,8 @@ function setup_(ui, currentSettings = {}) {
     let currentSpreadsheetId = responseCurrentSpreadsheetId.getResponseText();
     // Set script properties
     let properties = {
-      'clientId': clientId,
-      'clientSecret': clientSecret,
+      'ytClientId': ytClientId,
+      'ytClientSecret': ytClientSecret,
       'driveFolderId': driveFolderId,
       'currentYear': currentYear,
       'currentSpreadsheetId': currentSpreadsheetId,
