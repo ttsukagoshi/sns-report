@@ -1,0 +1,6 @@
+# clasp
+.clasp.json
+appsscript.json
+
+# old files
+src/archive/*
