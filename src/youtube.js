@@ -27,7 +27,7 @@ function showSidebarYouTubeApi() {
  * Logout
  * https://github.com/gsuitedevs/apps-script-oauth2#logout
  */
-function logout() {
+function logoutYouTube() {
   var service = getYouTubeAPIService_()
   service.reset();
 }

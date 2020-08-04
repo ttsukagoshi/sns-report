@@ -2,5 +2,6 @@
 .clasp.json
 appsscript.json
 
-# old files
+# old/test files
 src/archive/*
+src/_test.js

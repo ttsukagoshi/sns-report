@@ -16,9 +16,14 @@ var logSheetName = '99_Log';
  */
 function onOpen() {
   let ui = SpreadsheetApp.getUi();
+  ui.createMenu('Facebook')
+    .addItem('Authorize', 'showSidebarFacebookApi')
+    .addItem('Logout/Reset', 'logoutFacebook')
+    .addSeparator()
+    .addToUi();
   ui.createMenu('YouTube')
     .addItem('Authorize', 'showSidebarYouTubeApi')
-    .addItem('Logout', 'logout')
+    .addItem('Logout/Reset', 'logoutYouTube')
     .addSeparator()
     .addSubMenu(
       ui.createMenu('Update Channel/Video List')
