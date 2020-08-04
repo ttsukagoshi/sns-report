@@ -78,7 +78,7 @@ function setup_(ui, currentSettings = {}) {
       throw new Error('Canceled.');
     }
     let ytClientId = responseYtClientId.getResponseText();
-    // Client Secret
+    // YouTube Client Secret
     let promptYtClientSecret = 'YouTube Client Secret: OAuth 2.0 client secret for this script/spreadsheet. See https://developers.google.com/youtube/reporting/guides/registering_an_application';
     promptYtClientSecret += (currentSettings.ytClientSecret ? `\n\nCurrent Value: ${currentSettings.ytClientSecret}` : '');
     let responseYtClientSecret = ui.prompt(promptYtClientSecret, ui.ButtonSet.OK_CANCEL);
@@ -86,6 +86,14 @@ function setup_(ui, currentSettings = {}) {
       throw new Error('Canceled.');
     }
     var ytClientSecret = responseYtClientSecret.getResponseText();
+    // Facebook App ID
+    let promptFbAppId = 'Facebook App ID: ID of Facebook App to process request. See https://developers.facebook.com/docs/facebook-login/access-tokens/';
+    promptFbAppId += (currentSettings.fbAppId ? `\n\nCurrent Value: ${currentSettings.fbAppId}` : '');
+    let responseFbAppId = ui.prompt(promptFbAppId, ui.ButtonSet.OK_CANCEL);
+    if (responseFbAppId.getSelectedButton() !== ui.Button.OK) {
+      throw new Error('Canceled.');
+    }
+    var fbAppId = responseFbAppId.getResponseText();
     // Drive Folder ID
     let promptDriveFolderId = 'Drive Folder ID: The workspace Google Drive folder ID that all analytics spreadsheets are to be stored in.';
     promptDriveFolderId += (currentSettings.driveFolderId ? `\n\nCurrent Value: ${currentSettings.driveFolderId}` : '');
@@ -114,6 +122,7 @@ function setup_(ui, currentSettings = {}) {
     let properties = {
       'ytClientId': ytClientId,
       'ytClientSecret': ytClientSecret,
+      'fbAppId': fbAppId,
       'driveFolderId': driveFolderId,
       'currentYear': currentYear,
       'currentSpreadsheetId': currentSpreadsheetId,

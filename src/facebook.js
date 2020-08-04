@@ -20,7 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Global variables are defined on index.js
+var fbApiVersion = 'v7.0'; // Facebook Graph API version to be used
+// Other global variables are defined on index.js
 
 ///////////////////
 // Authorize 認証//
@@ -66,7 +67,7 @@ function showSidebarFacebookApi() {
     return OAuth2.createService('facebookAPI')
       // Set the endpoint URLs, which are the same for all Google services.
       .setAuthorizationBaseUrl('https://accounts.google.com/o/oauth2/auth')
-      .setTokenUrl('https://accounts.google.com/o/oauth2/token')
+      .setTokenUrl(``)
   
       // Set the client ID and secret, from the Google Developers Console.
       .setClientId(fbClientId)
