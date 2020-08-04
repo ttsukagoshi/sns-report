@@ -62,16 +62,16 @@ function showSidebarFacebookApi() {
   function getFacebookAPIService_() {
     // Script Properties
     var scriptProperties = PropertiesService.getScriptProperties().getProperties();
-    var [fbClientId, fbClientSecret] = [scriptProperties.fbClientId, scriptProperties.fbClientSecret];
+    var [fbAppId, fbAppSecret] = [scriptProperties.fbAppId, scriptProperties.fbAppSecret];
   
     return OAuth2.createService('facebookAPI')
-      // Set the endpoint URLs, which are the same for all Google services.
-      .setAuthorizationBaseUrl('https://accounts.google.com/o/oauth2/auth')
-      .setTokenUrl(``)
+      // Set the endpoint URLs
+      .setAuthorizationBaseUrl(`https://www.facebook.com/${fbApiVersion}/dialog/oauth`)
+      .setTokenUrl(`https://graph.facebook.com/${fbApiVersion}/oauth/access_token`)
   
-      // Set the client ID and secret, from the Google Developers Console.
-      .setClientId(fbClientId)
-      .setClientSecret(fbClientSecret)
+      // Set the Facebook App ID and App secret, from the Facebook Developers App Dashboard
+      .setClientId(fbAppId)
+      .setClientSecret(fbAppSecret)
   
       // Set the name of the callback function in the script referenced
       // above that should be invoked to complete the OAuth flow.
@@ -81,20 +81,21 @@ function showSidebarFacebookApi() {
       .setPropertyStore(PropertiesService.getUserProperties())
   
       // Set the scopes to request (space-separated for Google services).
-      .setScope('https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtubepartner https://www.googleapis.com/auth/yt-analytics-monetary.readonly https://www.googleapis.com/auth/yt-analytics.readonly')
+      .setScope('pages_read_engagement pages_show_list read_insights')
   
       // Below are Google-specific OAuth2 parameters.
       /*
       // Sets the login hint, which will prevent the account chooser screen
       // from being shown to users logged in with multiple accounts.
       .setParam('login_hint', Session.getEffectiveUser().getEmail())
-      */
+      
       // Requests offline access.
       .setParam('access_type', 'offline')
   
       // Consent prompt is required to ensure a refresh token is always
       // returned when requesting offline access.
       .setParam('prompt', 'consent');
+      */
   }
   
   /**
