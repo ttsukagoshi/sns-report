@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-var fbApiVersion = 'v7.0'; // Facebook Graph API version to be used
+var fbApiVersion = 'v8.0'; // Facebook Graph API version to be used
 // Other global variables are defined on index.js
 
 ///////////////////
