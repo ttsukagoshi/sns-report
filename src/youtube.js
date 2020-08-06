@@ -61,7 +61,7 @@ function logoutYouTube() {
 function getYouTubeAPIService_() {
   // Script Properties
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
-  var [clientId, clientSecret] = [scriptProperties.clientId, scriptProperties.clientSecret];
+  var [ytClientId, ytClientSecret] = [scriptProperties.ytClientId, scriptProperties.ytClientSecret];
 
   return OAuth2.createService('youtubeAPI')
     // Set the endpoint URLs, which are the same for all Google services.
@@ -69,8 +69,8 @@ function getYouTubeAPIService_() {
     .setTokenUrl('https://accounts.google.com/o/oauth2/token')
 
     // Set the client ID and secret, from the Google Developers Console.
-    .setClientId(clientId)
-    .setClientSecret(clientSecret)
+    .setClientId(ytClientId)
+    .setClientSecret(ytClientSecret)
 
     // Set the name of the callback function in the script referenced
     // above that should be invoked to complete the OAuth flow.
@@ -140,7 +140,8 @@ function updateYouTubeSummaryChannelList() {
     var channelList = channelListFull.map(
       function (element, index) {
         let num = index + 1;
-        let thumbnailUrl = `=image("${element.snippet.thumbnails.default.url}")`; // For using the image function on spreadsheet
+        let thumbnailUrl = element.snippet.thumbnails.default.url;
+        let thumbnailUrlFunction = `=image("${thumbnailUrl}")`; // For using the image function on spreadsheet
         let id = element.id;
         let title = element.snippet.title;
         let description = element.snippet.description;
@@ -149,7 +150,7 @@ function updateYouTubeSummaryChannelList() {
         let subscriberCount = element.statistics.subscriberCount;
         let videoCount = element.statistics.videoCount;
         let timestamp = formattedDate_(now, timeZone);
-        return [timestamp, num, thumbnailUrl, id, title, description, publishedAt, viewCount, subscriberCount, videoCount];
+        return [timestamp, num, thumbnailUrlFunction, thumbnailUrl, id, title, description, publishedAt, viewCount, subscriberCount, videoCount];
       }
     );
     // Set the text values into spreadsheets (summary and individual)
