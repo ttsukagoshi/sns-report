@@ -80,3 +80,43 @@ function errorMessage_(e) {
   let message = `Error: line - ${e.lineNumber}\n${e.stack}`
   return message;
 }
+
+
+/////////////////////////////
+// Configurations and Misc //
+/////////////////////////////
+
+/**
+ * Returns an object of configurations from spreadsheet.
+ * @param {string} configSheetName Name of sheet with configurations. Defaults to 'Config'.
+ * @return {Object}
+ * The sheet should have a first row of headers, with the keys (properties) in its first column and values in the second.
+ */
+function getConfig_(configSheetName = 'Config') {
+  // Get values from spreadsheet
+  var configValues = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(configSheetName).getDataRange().getValues();
+  configValues.shift();
+
+  // Convert the 2d array values into a Javascript object
+  var configObj = {};
+  configValues.forEach(element => configObj[element[0]] = element[1]);
+  return configObj;
+}
+
+/**
+ * Get the list of year-by-year Spreadsheet URLs in an array of Javascript objects
+ * @param {string} sheetName Name of sheet that the URLs are listed on.
+ * @returns {array}
+ */
+function getSpreadsheetList_(sheetName) {
+  var spreadsheetList = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getDataRange().getValues();
+  var header = spreadsheetList.shift();
+  // Convert the 2d array into an array of row-by-row Javascript objects
+  var spreadsheetListObj = spreadsheetList.map(function (value) {
+    return header.reduce(function (obj, key, ind) {
+      obj[key] = value[ind];
+      return obj;
+    }, {});
+  });
+  return spreadsheetListObj;
+}

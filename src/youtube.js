@@ -449,9 +449,9 @@ function updateYouTubeAnalyticsData() {
       && formattedDateAnalytics_(updatedVideoAnalyticsDate).slice(-5) == '12-31'
     );
     console.log(newYear);///////////////////
-    // newYear = trueの場合
-    // 新しいspreadsheet作成、URLをspreadsheet listに記録
-    // scriptPropertiesのcurrentYear、currentSpreadsheetId更新
+    // if newYear == true
+    // create new spreadsheet in the designatd google drive folder, get URL, record the URL to spreadsheet list
+    // update scriptProperties.currentYear and .currentSpreadsheetId
   } catch (error) {
     ui.alert(errorMessage_(error));
   }
@@ -746,18 +746,16 @@ function createYouTubeAnalyticsSummary() {
     } else if (reportMonth.length !== 7 || !reportMonth.match(/\d{4}-\d{2}/g)) {
       throw new Error(`Invalid period: "${reportMonth}".\nMake sure the report month is expressed in "yyyy-MM", e.g., enter "2020-03" for getting report for March 2020.`);
     }
-    let targetPeriodStartPre = new Date(parseInt(reportMonth.slice(0, 4) - 2), parseInt(reportMonth.slice(-2)) - 1, 1);
-    console.log(['targetPeriodStartPre', targetPeriodStartPre]);//////////////////////////
+    let targetPeriodStartPre = new Date(parseInt(reportMonth.slice(0, 4)) - 2, parseInt(reportMonth.slice(-2)) - 1, 1);
     let targetPeriodStart = new Date(targetPeriodStartPre.setMonth(targetPeriodStartPre.getMonth() + 1));
-    console.log(['targetPeriodStart', targetPeriodStart]);//////////////////////////
-    let reportPeriodStart = new Date(targetPeriodStart.setFullYear(targetPeriodStart.getFullYear() + 1));
-    console.log(['reportPeriodStart', reportPeriodStart]);//////////////////////////
-    let targetPeriodEndPre = new Date(reportMonth.slice(0, 4), parseInt(reportMonth.slice(-2) - 1), 1);
+    let reportPeriodStartPre = new Date(parseInt(reportMonth.slice(0, 4)) - 1, parseInt(reportMonth.slice(-2)) - 1, 1);
+    let reportPeriodStart = new Date(reportPeriodStartPre.setMonth(reportPeriodStartPre.getMonth() + 1));
+    let targetPeriodEndPre = new Date(reportMonth.slice(0, 4), parseInt(reportMonth.slice(-2)) - 1, 1);
     targetPeriodEndPre.setMonth(targetPeriodEndPre.getMonth() + 1);
     let targetPeriodEnd = new Date(targetPeriodEndPre.setDate(targetPeriodEndPre.getDate() - 1));
-    console.log(['targetPeriodEnd', targetPeriodEnd]);//////////////////////////
+    // Enter report into summary sheet
     summarySheet.getRange(6, 2).setValue(`${formattedDateAnalytics_(reportPeriodStart)} - ${formattedDateAnalytics_(targetPeriodEnd)}`)
-    //// Report as of
+    // Enter the timestamp for the report
     summarySheet.getRange(8, 2).setValue(`${formattedDate_(now)}`);
 
     // Update Channel/Video list
@@ -767,6 +765,9 @@ function createYouTubeAnalyticsSummary() {
     let bgDataChannelAnalytics = [];
     let bgDataChannelDemographics = [];
     let bgDataVideoAnalytics = [];
+    let channelAnalyticsDataHeader = [];
+    let channelDemographicsDataHeader = [];
+    let videoAnalyticsDataHeader = [];
     let spreadsheetList = getSpreadsheetList_(config.SHEET_NAME_SPREADSHEET_LIST);
     let dataYear = targetPeriodStart.getFullYear();
     while (dataYear <= targetPeriodEnd.getFullYear()) {
@@ -776,49 +777,60 @@ function createYouTubeAnalyticsSummary() {
       let channelAnalyticsSheet = dataSpreadsheet.getSheetByName(config.SHEET_NAME_CHANNEL_ANALYTICS);
       let channelAnalyticsDataFull = channelAnalyticsSheet.getDataRange().getValues();
       let channelAnalyticsData = [];
-      channelAnalyticsDataFull.shift();
+      channelAnalyticsDataHeader = channelAnalyticsDataFull.shift();
       // Get channel demographics
       let channelDemographicsSheet = dataSpreadsheet.getSheetByName(config.SHEET_NAME_CHANNEL_DEMOGRAPHICS);
       let channelDemographicsDataFull = channelDemographicsSheet.getDataRange().getValues();
       let channelDemographicsData = [];
-      channelDemographicsDataFull.shift();
+      channelDemographicsDataHeader = channelDemographicsDataFull.shift();
       // Get video analytics
       let videoAnalyticsSheet = dataSpreadsheet.getSheetByName(config.SHEET_NAME_VIDEO_ANALYTICS);
       let videoAnalyticsDataFull = videoAnalyticsSheet.getDataRange().getValues();
       let videoAnalyticsData = [];
-      videoAnalyticsDataFull.shift();
+      videoAnalyticsDataHeader = videoAnalyticsDataFull.shift();
       if (dataYear == targetPeriodStart.getFullYear()) {
         channelAnalyticsData = channelAnalyticsDataFull.filter(element => {
-          console.log(element);////////////////////////
           // Assuming that the first column of the channel analytics data table is the date
           let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-          return thisDate.getTime() >= targetPeriodStart.getTime();
+          // Assuming that the second column of the channel analytics data table is the channel ID
+          let channelId = element[1];
+          return thisDate.getTime() >= targetPeriodStart.getTime() && channelId == targetChannelId;
         });
         channelDemographicsData = channelDemographicsDataFull.filter(element => {
           // Assuming that the first column of the channel demographics data table is the year-month in yyyy-MM
           let thisDate = yearMonth2Date_(element[0]);
-          return thisDate.getMonth() >= targetPeriodStart.getMonth();
+          // Assuming that the second column of the channel demographics data table is the channel ID
+          let channelId = element[1];
+          return thisDate.getMonth() >= targetPeriodStart.getMonth() && channelId == targetChannelId;
         });
         videoAnalyticsData = videoAnalyticsDataFull.filter(element => {
           // Assuming that the first column of the video analytics data table is the date
           let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-          return thisDate.getTime() >= targetPeriodStart.getTime();
+          // Assuming that the second column of the channel demographics data table is the channel ID
+          let channelId = element[1];
+          return thisDate.getTime() >= targetPeriodStart.getTime() && channelId == targetChannelId;
         });
       } else if (dataYear == targetPeriodEnd.getFullYear()) {
         channelAnalyticsData = channelAnalyticsDataFull.filter(element => {
           // Assuming that the first column of the channel analytics data table is the date
           let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-          return thisDate.getTime() <= targetPeriodEnd.getTime();
+          // Assuming that the second column of the channel analytics data table is the channel ID
+          let channelId = element[1];
+          return thisDate.getTime() <= targetPeriodEnd.getTime() && channelId == targetChannelId;
         });
         channelDemographicsData = channelDemographicsDataFull.filter(element => {
           // Assuming that the first column of the channel demographics data table is the year-month in yyyy-MM
           let thisDate = yearMonth2Date_(element[0]);
-          return thisDate.getMonth() <= targetPeriodEnd.getMonth();
+          // Assuming that the second column of the channel demographics data table is the channel ID
+          let channelId = element[1];
+          return thisDate.getMonth() <= targetPeriodEnd.getMonth() && channelId == targetChannelId;
         });
         videoAnalyticsData = videoAnalyticsDataFull.filter(element => {
           // Assuming that the first column of the video analytics data table is the date
           let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-          return thisDate.getTime() <= targetPeriodEnd.getTime();
+          // Assuming that the second column of the video analytics data table is the channel ID
+          let channelId = element[1];
+          return thisDate.getTime() <= targetPeriodEnd.getTime() && channelId == targetChannelId;
         });
       } else {
         channelAnalyticsData = channelAnalyticsDataFull.slice();
@@ -831,21 +843,43 @@ function createYouTubeAnalyticsSummary() {
       bgDataChannelDemographics = newBgDataChannelDemographics.slice();
       let newBgDataVideoAnalytics = bgDataVideoAnalytics.concat(videoAnalyticsData);
       bgDataVideoAnalytics = newBgDataVideoAnalytics.slice();
-      // Update variables for next loop
+      // Update variable for next loop
       dataYear += 1;
     }
-    // Copy on spreadsheet
-    ss.getSheetByName(config.SHEET_NAME_CHANNEL_ANALYTICS_TEMP)
-      .getRange(1, 1, bgDataChannelAnalytics.length, bgDataChannelAnalytics[0].length)
-      .setValues(bgDataChannelAnalytics);
-    ss.getSheetByName(config.SHEET_NAME_CHANNEL_DEMOGRAPHICS_TEMP)
-      .getRange(1, 1, bgDataChannelDemographics.length, bgDataChannelDemographics[0].length)
+    // Add headers to the obtained data
+    bgDataChannelAnalytics.unshift(channelAnalyticsDataHeader);
+    bgDataChannelDemographics.unshift(channelDemographicsDataHeader);
+    bgDataVideoAnalytics.unshift(videoAnalyticsDataHeader);
+    // Process data for report
+    //// Group day-by-day data into monthly data (channel and video analytics)
+    let bgDataChannelAnalyticsMod = bgDataChannelAnalytics.map(function(element, index) {
+      if (index == 0) {
+        let concatElement = element.concat(['YEAR-MONTH','CURRENT-YEAR']);
+        return concatElement;
+      } else {
+        // Assuming that the first column of the channel analytics data table is the date
+        let yearMonth = element[0].slice(0, 7); 
+        let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
+        let currentYear = (thisDate.getTime() >= reportPeriodStart.getTime() ? true : false);
+        let concatElement = element.concat([yearMonth, currentYear]);
+        return concatElement;
+      }
+    });
+    // Delete existing temporary data and copy the new data on spreadsheet
+    let tempSheetChannelAnalytics = ss.getSheetByName(config.SHEET_NAME_TEMP_CHANNEL_ANALYTICS);
+    let tempSheetChannelDemographics = ss.getSheetByName(config.SHEET_NAME_TEMP_CHANNEL_DEMOGRAPHICS);
+    let tempSheetVideoAnalytics = ss.getSheetByName(config.SHEET_NAME_TEMP_VIDEO_ANALYTICS);
+    //// Delete existing data
+    tempSheetChannelAnalytics.getDataRange().deleteCells(SpreadsheetApp.Dimension.ROWS);
+    tempSheetChannelDemographics.getDataRange().deleteCells(SpreadsheetApp.Dimension.ROWS);
+    tempSheetVideoAnalytics.getDataRange().deleteCells(SpreadsheetApp.Dimension.ROWS);
+    //// Copy new data on spreadsheet
+    tempSheetChannelAnalytics.getRange(1, 1, bgDataChannelAnalyticsMod.length, bgDataChannelAnalyticsMod[0].length)
+      .setValues(bgDataChannelAnalyticsMod);
+    tempSheetChannelDemographics.getRange(1, 1, bgDataChannelDemographics.length, bgDataChannelDemographics[0].length)
       .setValues(bgDataChannelDemographics);
-    ss.getSheetByName(config.SHEET_NAME_VIDEO_ANALYTICS_TEMP)
-      .getRange(1, 1, bgDataVideoAnalytics.length, bgDataVideoAnalytics[0].length)
+    tempSheetVideoAnalytics.getRange(1, 1, bgDataVideoAnalytics.length, bgDataVideoAnalytics[0].length)
       .setValues(bgDataVideoAnalytics);
-
-    //////////////////////////////
   } catch (error) {
     ui.alert(errorMessage_(error));
   }
@@ -855,42 +889,6 @@ function createYouTubeAnalyticsSummary() {
 /////////////////////////////
 // Configurations and Misc //
 /////////////////////////////
-
-
-/**
- * Returns an object of configurations from spreadsheet.
- * @param {string} configSheetName Name of sheet with configurations. Defaults to 'Config'.
- * @return {Object}
- * The sheet should have a first row of headers, with the keys (properties) in its first column and values in the second.
- */
-function getConfig_(configSheetName = 'Config') {
-  // Get values from spreadsheet
-  var configValues = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(configSheetName).getDataRange().getValues();
-  configValues.shift();
-
-  // Convert the 2d array values into a Javascript object
-  var configObj = {};
-  configValues.forEach(element => configObj[element[0]] = element[1]);
-  return configObj;
-}
-
-/**
- * Get the list of year-by-year Spreadsheet URLs in an array of Javascript objects
- * @param {string} sheetName Name of sheet that the URLs are listed on.
- * @returns {array}
- */
-function getSpreadsheetList_(sheetName) {
-  var spreadsheetList = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getDataRange().getValues();
-  var header = spreadsheetList.shift();
-  // Convert the 2d array into an array of row-by-row Javascript objects
-  var spreadsheetListObj = spreadsheetList.map(function (value) {
-    return header.reduce(function (obj, key, ind) {
-      obj[key] = value[ind];
-      return obj;
-    }, {});
-  });
-  return spreadsheetListObj;
-}
 
 /**
  * Gets the latest listed date string (yyyy-MM-dd format) in a specified column of a Spreadsheet sheet, in form of Date object.
