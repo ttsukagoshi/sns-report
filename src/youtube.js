@@ -135,9 +135,9 @@ function updateYouTubeSummaryChannelList() {
   var now = new Date();
   try {
     // Get list of channel(s)
-    var channelListFull = youtubeMyChannelList_();
+    let channelListFull = youtubeMyChannelList_();
     // Extract data for copying into spreadsheet
-    var channelList = channelListFull.map(
+    let channelList = channelListFull.map(
       function (element, index) {
         let num = index + 1;
         let thumbnailUrl = element.snippet.thumbnails.default.url;
@@ -145,21 +145,24 @@ function updateYouTubeSummaryChannelList() {
         let id = element.id;
         let title = element.snippet.title;
         let description = element.snippet.description;
-        let publishedAt = formattedDate_(new Date(element.snippet.publishedAt), timeZone);
+        let publishedAt = element.snippet.publishedAt;
+        let publishedAtLocal = formattedDate_(new Date(publishedAt), timeZone);
         let viewCount = element.statistics.viewCount;
         let subscriberCount = element.statistics.subscriberCount;
         let videoCount = element.statistics.videoCount;
         let timestamp = formattedDate_(now, timeZone);
-        return [timestamp, num, thumbnailUrlFunction, thumbnailUrl, id, title, description, publishedAt, viewCount, subscriberCount, videoCount];
+        return [timestamp, num, thumbnailUrlFunction, thumbnailUrl, id, title, description, publishedAt, publishedAtLocal, viewCount, subscriberCount, videoCount];
       }
     );
     // Set the text values into spreadsheets (summary and individual)
-    //// Summary Spreadsheet
-    ss.getSheetByName(config.SHEET_NAME_MY_CHANNELS)
-      .getRange(2, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
+    //// Renew channel list of summary spreadsheet
+    let myChannelsSheet = ss.getSheetByName(config.SHEET_NAME_MY_CHANNELS);
+    myChannelsSheet.getRange(2, 1, myChannelsSheet.getLastRow() - 1, myChannelsSheet.getLastColumn())
+      .deleteCells(SpreadsheetApp.Dimension.ROWS);
+    myChannelsSheet.getRange(2, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from the 2nd row of column 1 ('A' column).
       .setValues(channelList);
-    //// Current Spreadsheet of this year
-    var currentSheet = SpreadsheetApp.openById(scriptProperties.currentSpreadsheetId).getSheetByName(config.SHEET_NAME_MY_CHANNELS);
+    //// Add row(s) to current spreadsheet of this year
+    let currentSheet = SpreadsheetApp.openById(scriptProperties.currentSpreadsheetId).getSheetByName(config.SHEET_NAME_MY_CHANNELS);
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
       .setValues(channelList);
     // Log & Notify
@@ -197,7 +200,8 @@ function updateYouTubeSummaryVideoList() {
         let title = element.snippet.title;
         let description = element.snippet.description;
         let videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-        let publishedAt = formattedDate_(new Date(element.snippet.publishedAt), timeZone);
+        let publishedAt = element.snippet.publishedAt;
+        let publishedAtLocal = formattedDate_(new Date(publishedAt), timeZone);
         let timestamp = formattedDate_(now, timeZone);
         // Statistics and status of each video
         let videoStats = youtubeVideos_([videoId], false)[0];
@@ -222,6 +226,7 @@ function updateYouTubeSummaryVideoList() {
           duration,
           caption,
           publishedAt,
+          publishedAtLocal,
           privacyStatus,
           viewCount,
           likeCount,
@@ -231,12 +236,14 @@ function updateYouTubeSummaryVideoList() {
       }
     );
     // Set the text values into spreadsheets (summary and individual)
-    //// Summary Spreadsheet
-    ss.getSheetByName(config.SHEET_NAME_MY_VIDEOS)
-      .getRange(2, 1, videoList.length, videoList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
+    //// Renew channel list of summary spreadsheet
+    let myVideosSheet = ss.getSheetByName(config.SHEET_NAME_MY_VIDEOS);
+    myVideosSheet.getRange(2, 1, myVideosSheet.getLastRow() - 1, myVideosSheet.getLastColumn())
+      .deleteCells(SpreadsheetApp.Dimension.ROWS);
+    myVideosSheet.getRange(2, 1, videoList.length, videoList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
       .setValues(videoList);
-    //// Summary Spreadsheet
-    var currentSheet = SpreadsheetApp.openById(scriptProperties.currentSpreadsheetId).getSheetByName(config.SHEET_NAME_MY_VIDEOS);
+    //// Add row(s) to current spreadsheet of this year
+    let currentSheet = SpreadsheetApp.openById(scriptProperties.currentSpreadsheetId).getSheetByName(config.SHEET_NAME_MY_VIDEOS);
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, videoList.length, videoList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
       .setValues(videoList);
     // Log & Notify
@@ -852,13 +859,13 @@ function createYouTubeAnalyticsSummary() {
     bgDataVideoAnalytics.unshift(videoAnalyticsDataHeader);
     // Process data for report
     //// Group day-by-day data into monthly data (channel and video analytics)
-    let bgDataChannelAnalyticsMod = bgDataChannelAnalytics.map(function(element, index) {
+    let bgDataChannelAnalyticsMod = bgDataChannelAnalytics.map(function (element, index) {
       if (index == 0) {
-        let concatElement = element.concat(['YEAR-MONTH','CURRENT-YEAR']);
+        let concatElement = element.concat(['YEAR-MONTH', 'CURRENT-YEAR']);
         return concatElement;
       } else {
         // Assuming that the first column of the channel analytics data table is the date
-        let yearMonth = element[0].slice(0, 7); 
+        let yearMonth = element[0].slice(0, 7);
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
         let currentYear = (thisDate.getTime() >= reportPeriodStart.getTime() ? true : false);
         let concatElement = element.concat([yearMonth, currentYear]);
@@ -952,17 +959,6 @@ function yMd2Date_(yMd) {
 function yearMonth2Date_(yearMonth) {
   var dateObj = (yearMonth ? new Date(yearMonth.slice(0, 4), parseInt(yearMonth.slice(-2)) - 1, 1) : null);
   return dateObj;
-}
-
-/**
- * Returns a formatted date
- * @param {Date} date Date object to format
- * @param {string} timeZone [Optional] Time zone; defaults to the script's time zone. https://developers.google.com/apps-script/reference/base/session#getScriptTimeZone()
- * @returns {string} Formatted date string
- */
-function formattedDate_(date, timeZone = Session.getScriptTimeZone()) {
-  var dateString = Utilities.formatDate(date, timeZone, 'yyyy-MM-dd HH:mm:ss Z');
-  return dateString;
 }
 
 /**

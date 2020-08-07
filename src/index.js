@@ -120,3 +120,13 @@ function getSpreadsheetList_(sheetName) {
   });
   return spreadsheetListObj;
 }
+/**
+ * Returns a formatted date
+ * @param {Date} date Date object to format
+ * @param {string} timeZone [Optional] Time zone; defaults to the script's time zone. https://developers.google.com/apps-script/reference/base/session#getScriptTimeZone()
+ * @returns {string} Formatted date string
+ */
+function formattedDate_(date, timeZone = Session.getScriptTimeZone()) {
+  var dateString = Utilities.formatDate(date, timeZone, 'yyyy-MM-dd HH:mm:ss Z');
+  return dateString;
+}
