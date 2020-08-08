@@ -485,7 +485,6 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     // If the value returned for getLatestDate_() is null, i.e., there are no previous dates recorded in targetSheet,
     // latestDate will be Dec 31 of the previous year of targetYear
     let latestDate = (getLatestDate_(targetSheet, 1) ? getLatestDate_(targetSheet, 1) : new Date(targetYear - 1, 11, 31)); // Assuming that the date is recorded on column A of the targetSheet.
-    console.log(latestDate);//////////////////////////////////////////
     startDateObj = new Date(latestDate.setDate(latestDate.getDate() + 1));
     // Setting parameters for youtubeAnalyticsReportsQuery_()
     let startDate = formattedDateAnalytics_(startDateObj);
@@ -498,11 +497,21 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     };
     // Get analytics data
     let reports = JSON.parse(youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids, options));
-    // Copy on spreadsheet
     let data = reports.rows.slice();
     let updatedLatestDateObj = getLatestDate_(targetSheet, 1);
     if (data && data.length > 0) {
-      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, data.length, data[0].length).setValues(data);
+      // Get day-by-day count of published videos per channel
+      let myVideosCountByPubDate = youtubeMyVideoCountByPubDate_();
+      // Process data for later analysis
+      let dataMod = data.map(function (row) {
+        // Assuming that the DAY and CHANNEL ID fields come in the 1st and 2nd column of 'row', respectively
+        let publishedVideoCount = (myVideosCountByPubDate[row[1]][row[0]] ? myVideosCountByPubDate[row[1]][row[0]] : 0);
+        let yearMonth = row[0].slice(0, 7); 
+        let concatRow = row.concat([publishedVideoCount, yearMonth]);
+        return concatRow;
+      });
+      // Copy on spreadsheet
+      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, dataMod.length, dataMod[0].length).setValues(dataMod);
       // Get latest updated date
       updatedLatestDateObj = getLatestDate_(targetSheet, 1);
       // Log
@@ -516,6 +525,29 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     enterLog_(targetSpreadsheet.getId(), logSheetName, message, now);
     throw new Error(message);
   }
+}
+
+/**
+ * Get a day-by-day count of published videos per channel in form of a JavaScript object.
+ * See detailed definition of publishedAt at https://developers.google.com/youtube/v3/docs/videos#properties
+ * @returns {Object} {<Channel ID>:{<yyyy-MM-dd>: <count>}}
+ */
+function youtubeMyVideoCountByPubDate_() {
+  var myVideos = youtubeMyVideoList_();
+  var countList = myVideos.reduce(function(acc, cur) {
+    let channelId = cur.snippet.channelId;
+    let publishedAtPT = formattedDate_(new Date(cur.snippet.publishedAt), 'PST').slice(0, 10); // yyyy-MM-dd in Pacific Time, i.e., PST or PDT depending on the date
+    if (!acc[channelId]) {
+      acc[channelId] = {};
+    }
+    if (!acc[channelId][publishedAtPT]) {
+      acc[channelId][publishedAtPT] = 0;
+    }
+    acc[channelId][publishedAtPT] += 1;
+    return acc;
+  }, {});
+  console.log(countList);/////////////////////////////////
+  return countList;
 }
 
 /**
@@ -760,7 +792,7 @@ function createYouTubeAnalyticsSummary() {
     let targetPeriodEndPre = new Date(reportMonth.slice(0, 4), parseInt(reportMonth.slice(-2)) - 1, 1);
     targetPeriodEndPre.setMonth(targetPeriodEndPre.getMonth() + 1);
     let targetPeriodEnd = new Date(targetPeriodEndPre.setDate(targetPeriodEndPre.getDate() - 1));
-    // Enter report into summary sheet
+    // Enter report period into summary sheet
     summarySheet.getRange(6, 2).setValue(`${formattedDateAnalytics_(reportPeriodStart)} - ${formattedDateAnalytics_(targetPeriodEnd)}`)
     // Enter the timestamp for the report
     summarySheet.getRange(8, 2).setValue(`${formattedDate_(now)}`);
@@ -858,17 +890,15 @@ function createYouTubeAnalyticsSummary() {
     bgDataChannelDemographics.unshift(channelDemographicsDataHeader);
     bgDataVideoAnalytics.unshift(videoAnalyticsDataHeader);
     // Process data for report
-    //// Group day-by-day data into monthly data (channel and video analytics)
     let bgDataChannelAnalyticsMod = bgDataChannelAnalytics.map(function (element, index) {
       if (index == 0) {
-        let concatElement = element.concat(['YEAR-MONTH', 'CURRENT-YEAR']);
+        let concatElement = element.concat(['CURRENT-YEAR']);
         return concatElement;
       } else {
         // Assuming that the first column of the channel analytics data table is the date
-        let yearMonth = element[0].slice(0, 7);
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
         let currentYear = (thisDate.getTime() >= reportPeriodStart.getTime() ? true : false);
-        let concatElement = element.concat([yearMonth, currentYear]);
+        let concatElement = element.concat([currentYear]);
         return concatElement;
       }
     });

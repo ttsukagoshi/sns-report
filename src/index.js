@@ -120,6 +120,7 @@ function getSpreadsheetList_(sheetName) {
   });
   return spreadsheetListObj;
 }
+
 /**
  * Returns a formatted date
  * @param {Date} date Date object to format
