@@ -546,7 +546,6 @@ function youtubeMyVideoCountByPubDate_() {
     acc[channelId][publishedAtPT] += 1;
     return acc;
   }, {});
-  console.log(countList);/////////////////////////////////
   return countList;
 }
 
@@ -892,13 +891,16 @@ function createYouTubeAnalyticsSummary() {
     // Process data for report
     let bgDataChannelAnalyticsMod = bgDataChannelAnalytics.map(function (element, index) {
       if (index == 0) {
-        let concatElement = element.concat(['CURRENT-YEAR']);
+        let concatElement = element.concat(['CURRENT-YEAR', 'DISLIKES_INV', 'SUBSCRIBERS TOTAL']);
         return concatElement;
       } else {
         // Assuming that the first column of the channel analytics data table is the date
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-        let currentYear = (thisDate.getTime() >= reportPeriodStart.getTime() ? true : false);
-        let concatElement = element.concat([currentYear]);
+        let currentYear = (thisDate.getTime() >= reportPeriodStart.getTime());
+        let dislikesInv = -parseInt(element[4]); // Invert postive counts of dislikes to negative for better visualization
+        let subscribersTotal = parseInt(element[5]) - parseInt(element[6]); // [SUBSCRIBERS GAINED] - [SUBSCRIBERS LOST]
+        // Add column(s) to the original data
+        let concatElement = element.concat([currentYear, dislikesInv, subscribersTotal]);
         return concatElement;
       }
     });
