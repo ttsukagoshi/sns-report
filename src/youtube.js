@@ -750,6 +750,7 @@ function youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids = 'chann
 function createYouTubeAnalyticsSummary() {
   var ui = SpreadsheetApp.getUi();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ssTimeZone = ss.getSpreadsheetTimeZone();
   var config = getConfig_();
   var summarySheet = ss.getSheetByName(config.SHEET_NAME_YOUTUBE_SUMMARY);
   var now = new Date();
@@ -891,16 +892,23 @@ function createYouTubeAnalyticsSummary() {
     // Process data for report
     let bgDataChannelAnalyticsMod = bgDataChannelAnalytics.map(function (element, index) {
       if (index == 0) {
-        let concatElement = element.concat(['CURRENT-YEAR', 'DISLIKES_INV', 'SUBSCRIBERS TOTAL']);
+        let concatElement = element.concat(['CURRENT-YEAR', 'YEAR-MONTH_AGG', 'DISLIKES_INV', 'SUBSCRIBERS TOTAL']);
         return concatElement;
       } else {
         // Assuming that the first column of the channel analytics data table is the date
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-        let currentYear = (thisDate.getTime() >= reportPeriodStart.getTime());
+        let currentYear = (thisDate.getTime() >= reportPeriodStart.getTime() ? 'CURRENT' : 'PREVIOUS');
+        // convert previous year's year-month into current year's corresponding months for aggregation
+        // assuming column index 12 is YEAR-MONTH
+        let yearMonthAggPre = Utilities.formatDate(element[12], ssTimeZone, 'yyyy-MM');
+        let yearMonthAgg = (
+          currentYear == 'PREVIOUS'
+          ? `${parseInt(yearMonthAggPre.slice(0, 4)) + 1}-${yearMonthAggPre.slice(-2)}`
+          : yearMonthAggPre);
         let dislikesInv = -parseInt(element[4]); // Invert postive counts of dislikes to negative for better visualization
         let subscribersTotal = parseInt(element[5]) - parseInt(element[6]); // [SUBSCRIBERS GAINED] - [SUBSCRIBERS LOST]
         // Add column(s) to the original data
-        let concatElement = element.concat([currentYear, dislikesInv, subscribersTotal]);
+        let concatElement = element.concat([currentYear, yearMonthAgg, dislikesInv, subscribersTotal]);
         return concatElement;
       }
     });
