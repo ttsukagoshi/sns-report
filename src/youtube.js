@@ -125,9 +125,9 @@ function updateAllYouTubeList() {
 
 /**
  * List the authorized user's channel(s) on the summary spreadsheet
- * @param {boolean} mute [Optional] Mute ui.alert() when true; defaults to false.
+ * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
  */
-function updateYouTubeSummaryChannelList(mute = false) {
+function updateYouTubeSummaryChannelList(muteUiAlert = false) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var timeZone = ss.getSpreadsheetTimeZone();
   var ui = SpreadsheetApp.getUi();
@@ -168,14 +168,14 @@ function updateYouTubeSummaryChannelList(mute = false) {
       .setValues(channelList);
     // Log & Notify
     enterLog_(scriptProperties.currentSpreadsheetId, logSheetName, 'Success: updated channel list.', now)
-    if (!mute) {
+    if (!muteUiAlert) {
       ui.alert('Completed', 'Updated summary channel list.', ui.ButtonSet.OK);
     }
     return channelList;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(scriptProperties.currentSpreadsheetId, logSheetName, message, now)
-    if (!mute) {
+    if (!muteUiAlert) {
       ui.alert('Error', message, ui.ButtonSet.OK);
     }
     return null;
@@ -184,9 +184,9 @@ function updateYouTubeSummaryChannelList(mute = false) {
 
 /**
  * List the authorized user's video(s) on the summary spreadsheet
- * @param {boolean} mute [Optional] Mute ui.alert() when true; defaults to false.
+ * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
  */
-function updateYouTubeSummaryVideoList(mute = false) {
+function updateYouTubeSummaryVideoList(muteUiAlert = false) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var timeZone = ss.getSpreadsheetTimeZone();
   var ui = SpreadsheetApp.getUi();
@@ -256,14 +256,14 @@ function updateYouTubeSummaryVideoList(mute = false) {
       .setValues(videoList);
     // Log & Notify
     enterLog_(scriptProperties.currentSpreadsheetId, logSheetName, 'Success: updated video list.', now);
-    if (!mute) {
+    if (!muteUiAlert) {
       ui.alert('Completed', 'Updated summary video list.', ui.ButtonSet.OK);
     }
     return videoList;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(scriptProperties.currentSpreadsheetId, logSheetName, message, now);
-    if (!mute) {
+    if (!muteUiAlert) {
       ui.alert('Error', message, ui.ButtonSet.OK);
     }
     return null;
@@ -550,7 +550,7 @@ function youtubeMyVideoCountByPubDate_() {
   var myVideos = youtubeMyVideoList_();
   var countList = myVideos.reduce(function (acc, cur) {
     let channelId = cur.snippet.channelId;
-    let publishedAtPT = formattedDate_(new Date(cur.snippet.publishedAt), 'PST').slice(0, 10); // yyyy-MM-dd in Pacific Time, i.e., PST or PDT depending on the date
+    let publishedAtPT = formattedDateAnalytics_(new Date(cur.snippet.publishedAt), 'PST'); // yyyy-MM-dd in Pacific Time, i.e., PST or PDT depending on the date
     if (!acc[channelId]) {
       acc[channelId] = {};
     }
@@ -686,7 +686,12 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
     // Copy on spreadsheet
     let updatedLatestDateObj = getLatestDate_(targetSheet, 1);
     if (data && data.length > 0) {
-      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, data.length, data[0].length).setValues(data);
+      let dataMod = data.map(function (row) {
+        let yearMonth = row[0].slice(0, 7);
+        let concatRow = row.concat([yearMonth]);
+        return concatRow;
+      });
+      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, dataMod.length, dataMod[0].length).setValues(dataMod);
       // Get latest updated date
       updatedLatestDateObj = getLatestDate_(targetSheet, 1);
       // Log
@@ -781,12 +786,11 @@ function createYouTubeAnalyticsSummary() {
       throw new Error(`Invalid Channel ID: "${targetChannelId}".\nMake sure to enter the ID of the YouTube channel that you own.`)
     }
     let targetChannelName = myChannelListFull.filter(element => element.id == targetChannelId)[0].snippet.title;
-    summarySheet.getRange(4, 2).setValue(`${targetChannelName} (${targetChannelId})`);
     // Report month
     let reportMonth = summarySheet.getRange(4, 5).getValue();
     if (!reportMonth) {
       throw new Error('No text entered for report month.');
-    } else if (reportMonth.length !== 7 || !reportMonth.match(/\d{4}-\d{2}/g)) {
+    } else if (!reportMonth.match(/^\d{4}-\d{2}$/)) {
       throw new Error(`Invalid period: "${reportMonth}".\nMake sure the report month is expressed in "yyyy-MM", e.g., enter "2020-03" for getting report for March 2020.`);
     }
     let targetPeriodStartPre = new Date(parseInt(reportMonth.slice(0, 4)) - 2, parseInt(reportMonth.slice(-2)) - 1, 1);
@@ -797,11 +801,13 @@ function createYouTubeAnalyticsSummary() {
     targetPeriodEndPre.setMonth(targetPeriodEndPre.getMonth() + 1);
     let targetPeriodEnd = new Date(targetPeriodEndPre.setDate(targetPeriodEndPre.getDate() - 1));
     // Update Channel/Video list
-    /////////////////////////////////// un-comment out when all is complete
-    let channelList = updateYouTubeSummaryChannelList(true);
-    /*
-    let videoList = updateYouTubeSummaryVideoList(true);
+    let muteUiAlert = true;
+    let channelList = updateYouTubeSummaryChannelList(muteUiAlert);
+    /* un-comment-out when all is complete///////////////////////////////////////////////////
+    let videoList = updateYouTubeSummaryVideoList(muteUiAlert);
     */
+    let videoList = ss.getSheetByName(config.SHEET_NAME_MY_VIDEOS).getDataRange().getValues();/////////////////////////////////////////////////
+    videoList.shift();///////////////////////////////////////////////////
     let channelListTarget = channelList.filter(element => element[4] == targetChannelId);
     let channelListSummary = channelListTarget.map(element => [
       element[2], // thumbnail image function
@@ -822,9 +828,12 @@ function createYouTubeAnalyticsSummary() {
     let channelDemographicsDataHeader = [];
     let videoAnalyticsDataHeader = [];
     let spreadsheetList = getSpreadsheetList_(config.SHEET_NAME_SPREADSHEET_LIST);
-    let dataYear = targetPeriodStart.getFullYear();
-    while (dataYear <= targetPeriodEnd.getFullYear()) {
-      let dataSpreadsheetUrl = spreadsheetList.filter(value => (value.YEAR == dataYear && value.PLATFORM == 'YouTube'))[0].URL;
+    for (let i = 0; i < spreadsheetList.length; i++) {
+      let row = spreadsheetList[i];
+      if (row.PLATFORM != 'YouTube' || row.YEAR > targetPeriodEnd.getFullYear()) {
+        continue;
+      }
+      let dataSpreadsheetUrl = row.URL;
       let dataSpreadsheet = SpreadsheetApp.openByUrl(dataSpreadsheetUrl);
       // Get channel analytics
       let channelAnalyticsSheet = dataSpreadsheet.getSheetByName(config.SHEET_NAME_CHANNEL_ANALYTICS);
@@ -841,7 +850,9 @@ function createYouTubeAnalyticsSummary() {
       let videoAnalyticsDataFull = videoAnalyticsSheet.getDataRange().getValues();
       let videoAnalyticsData = [];
       videoAnalyticsDataHeader = videoAnalyticsDataFull.shift();
-      if (dataYear == targetPeriodStart.getFullYear()) {
+      if (row.YEAR < targetPeriodStart.getFullYear()) {
+        videoAnalyticsData = videoAnalyticsDataFull.filter(element => element[1] == targetChannelId); // Assuming that the second column of the video analytics data table is the channel ID
+      } else if (row.YEAR == targetPeriodStart.getFullYear()) {
         channelAnalyticsData = channelAnalyticsDataFull.filter(element => {
           // Assuming that the first column of the channel analytics data table is the date
           let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
@@ -857,36 +868,8 @@ function createYouTubeAnalyticsSummary() {
           // For demographics, return data for only the report period, not the full target period.
           return thisDate.getTime() >= reportPeriodStart.getTime() && channelId == targetChannelId;
         });
-        videoAnalyticsData = videoAnalyticsDataFull.filter(element => {
-          // Assuming that the first column of the video analytics data table is the date
-          let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-          // Assuming that the second column of the channel demographics data table is the channel ID
-          let channelId = element[1];
-          return thisDate.getTime() >= targetPeriodStart.getTime() && channelId == targetChannelId;
-        });
-      } else if (dataYear == targetPeriodEnd.getFullYear()) {
-        channelAnalyticsData = channelAnalyticsDataFull.filter(element => {
-          // Assuming that the first column of the channel analytics data table is the date
-          let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-          // Assuming that the second column of the channel analytics data table is the channel ID
-          let channelId = element[1];
-          return thisDate.getTime() <= targetPeriodEnd.getTime() && channelId == targetChannelId;
-        });
-        channelDemographicsData = channelDemographicsDataFull.filter(element => {
-          // Assuming that the first column of the channel demographics data table is the year-month in yyyy-MM
-          let thisDate = yearMonth2Date_(element[0]);
-          // Assuming that the second column of the channel demographics data table is the channel ID
-          let channelId = element[1];
-          return thisDate.getTime() <= targetPeriodEnd.getTime() && channelId == targetChannelId;
-        });
-        videoAnalyticsData = videoAnalyticsDataFull.filter(element => {
-          // Assuming that the first column of the video analytics data table is the date
-          let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-          // Assuming that the second column of the video analytics data table is the channel ID
-          let channelId = element[1];
-          return thisDate.getTime() <= targetPeriodEnd.getTime() && channelId == targetChannelId;
-        });
-      } else {
+        videoAnalyticsData = videoAnalyticsDataFull.filter(element => element[1] == targetChannelId); // Assuming that the second column of the video analytics data table is the channel ID
+      } else if (row.YEAR > targetPeriodStart.getFullYear() && row.YEAR < targetPeriodEnd.getFullYear()) {
         channelAnalyticsData = channelAnalyticsDataFull.slice();
         channelDemographicsData = channelDemographicsDataFull.filter(element => {
           // Assuming that the first column of the channel demographics data table is the year-month in yyyy-MM
@@ -896,16 +879,33 @@ function createYouTubeAnalyticsSummary() {
           // For demographics, return data for only the report period, not the full target period.
           return thisDate.getTime() >= reportPeriodStart.getTime() && channelId == targetChannelId;
         });
-        videoAnalyticsData = videoAnalyticsDataFull.slice();
+        videoAnalyticsData = videoAnalyticsDataFull.filter(element => element[1] == targetChannelId); // Assuming that the second column of the video analytics data table is the channel ID
+      } else if (row.YEAR == targetPeriodEnd.getFullYear()) {
+        channelAnalyticsData = channelAnalyticsDataFull.filter(element => {
+          // Assuming that the first column of the channel analytics data table is the date
+          let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
+          // Assuming that the second column of the channel analytics data table is the channel ID
+          let channelId = element[1];
+          return thisDate.getTime() <= targetPeriodEnd.getTime() && channelId == targetChannelId;
+        });
+        channelDemographicsData = channelDemographicsDataFull.filter(element => {
+          // Assuming that the first column of the channel demographics data table is the year-month in yyyy-MM
+          let thisDate = yearMonth2Date_(element[0]);
+          // Assuming that the second column of the channel demographics data table is the channel ID
+          let channelId = element[1];
+          return thisDate.getTime() <= targetPeriodEnd.getTime() && channelId == targetChannelId;
+        });
+        videoAnalyticsData = videoAnalyticsDataFull.filter(element => element[1] == targetChannelId); // Assuming that the second column of the video analytics data table is the channel ID
+      } else {
+        continue;
       }
+      // Concatenate
       let newBgDataChannelAnalytics = bgDataChannelAnalytics.concat(channelAnalyticsData);
       bgDataChannelAnalytics = newBgDataChannelAnalytics.slice();
       let newBgDataChannelDemographics = bgDataChannelDemographics.concat(channelDemographicsData);
       bgDataChannelDemographics = newBgDataChannelDemographics.slice();
       let newBgDataVideoAnalytics = bgDataVideoAnalytics.concat(videoAnalyticsData);
       bgDataVideoAnalytics = newBgDataVideoAnalytics.slice();
-      // Update variable for next loop
-      dataYear += 1;
     }
     // Add headers to the obtained data
     bgDataChannelAnalytics.unshift(channelAnalyticsDataHeader);
@@ -934,6 +934,19 @@ function createYouTubeAnalyticsSummary() {
         return concatElement;
       }
     });
+    let bgDataVideoAnalyticsMod = bgDataVideoAnalytics.map(function (element, index) {
+      if (index == 0) {
+        let concatElement = element.concat(['DISLIKES_INV', 'SUBSCRIBERS TOTAL', 'ESTIMATED SECONDS WATCHED']);
+        return concatElement;
+      } else {
+        let dislikesInv = -parseInt(element[5]); // Invert postive counts of dislikes to negative for better visualization
+        let subscribersTotal = parseInt(element[6]) - parseInt(element[7]); // [SUBSCRIBERS GAINED] - [SUBSCRIBERS LOST]
+        let estimatedSecWatched = element[8] * 60; // Convert [ESTIMATED MINUTES WATCHED] into seconds
+        // Add column(s) to the original data
+        let concatElement = element.concat([dislikesInv, subscribersTotal, estimatedSecWatched]);
+        return concatElement;
+      }
+    });
     // Delete existing temporary data and copy the new data on spreadsheet
     let tempSheetChannelAnalytics = ss.getSheetByName(config.SHEET_NAME_TEMP_CHANNEL_ANALYTICS);
     let tempSheetChannelDemographics = ss.getSheetByName(config.SHEET_NAME_TEMP_CHANNEL_DEMOGRAPHICS);
@@ -947,8 +960,61 @@ function createYouTubeAnalyticsSummary() {
       .setValues(bgDataChannelAnalyticsMod);
     tempSheetChannelDemographics.getRange(1, 1, bgDataChannelDemographics.length, bgDataChannelDemographics[0].length)
       .setValues(bgDataChannelDemographics);
-    tempSheetVideoAnalytics.getRange(1, 1, bgDataVideoAnalytics.length, bgDataVideoAnalytics[0].length)
+    tempSheetVideoAnalytics.getRange(1, 1, bgDataVideoAnalyticsMod.length, bgDataVideoAnalyticsMod[0].length)
       .setValues(bgDataVideoAnalytics);
+    // Create modified list of authenticated user's videos with advanced statistics
+    let videoListMod = videoList.map(function (element) {
+      // Name the values in element
+      let num = element[1];
+      let thumbnailUrlFunction = element[2];
+      let thumbnailUrl = element[3];
+      let videoId = element[6];
+      let videoTitle = element[7];
+      let videoDesc = element[8];
+      let videoUrl = element[9];
+      let durationSec = iso8601duration2sec_(element[10]);
+      let caption = element[11];
+      let publishedAtUtc = element[12];
+      let publishedAtLocal = element[13];
+      let privacyStatus = element[14];
+      let viewCountLatest = element[15];
+      let likeCountLatest = element[16];
+      let dislikeCountLatest = element[17];
+      let timestamp = element[0];
+      // Key dates for advanced statistics
+      let publishedAt = new Date(publishedAtUtc);
+      console.log(publishedAt)
+      let publishedAtPTstring = formattedDateAnalytics_(publishedAt, 'PST'); // Published date of the video in yyyy-MM-dd of Pacific Time
+      let week1 = new Date(publishedAt.setDate(publishedAt.getDate() + 7));
+      let week1string = formattedDateAnalytics_(week1, 'PST');
+      let week4 = new Date(publishedAt.setDate(publishedAt.getDate() + 21)); // 7 + 21 = 28 (= 7 * 4)
+      let week4string = formattedDateAnalytics_(week4, 'PST');
+      let week12 = new Date(publishedAt.setDate(publishedAt.getDate() * 56)); // 7 + 21 + 56 = 84 (= 7 * 12)
+      let week12string = formattedDateAnalytics_(week12, 'PST');
+      // Advanced statistics using bgDataVideoAnalyticsMod
+      /////////////////////////////////////////////////////////
+      let elementMod = [
+        num,
+        thumbnailUrlFunction,
+        thumbnailUrl,
+        videoId,
+        videoTitle,
+        videoDesc,
+        videoUrl,
+        durationSec,
+        caption,
+        publishedAtUtc,
+        publishedAtLocal,
+        privacyStatus,
+        viewCountLatest,
+        likeCountLatest,
+        dislikeCountLatest,
+        timestamp
+      ];
+      return elementMod;
+    });
+    ////////////////////////////////// setValues(videoListMod);
+    ui.alert(`Report for ${reportMonth} of YouTube channel "${targetChannelName}" created.`);
   } catch (error) {
     ui.alert(errorMessage_(error));
   }
@@ -1057,4 +1123,30 @@ function enterLog_(spreadsheetId, sheetName, logMessage, timestamp = new Date())
 function setColumnAsText_(sheet, colNum = 1) {
   sheet.getRange(1, colNum, sheet.getLastRow(), 1).setNumberFormat('@');
   return sheet;
+}
+
+/**
+ * Converts durations in ISO8601 format into seconds.
+ * This function regards only the days, hours, minutes, and seconds to fit this script's needs; years, months, and weeks are discarded.
+ * @param {string} iso8601duration Duration in ISO8601 format. https://en.wikipedia.org/wiki/ISO_8601#Durations
+ * @returns {number} Duration in seconds.
+ */
+function iso8601duration2sec_(iso8601duration) {
+  var SEC = {
+    minute: 60, // minutes in seconds
+    hour: 60 * 60, // hours in seconds
+    day: 24 * 60 * 60, // days in seconds
+    second: 1 
+  }; 
+  var durationRegex = /^(?<sign>-)?P(((?<year>\d+)Y)?((?<month>\d+)M)?((?<day>\d+)D)?(?:T((?<hour>\d+)H)?((?<minute>\d+)M)?((?<second>\d+)S)?)?|(?<week>\d+)W)$/;
+  var durationGroups = iso8601duration.match(durationRegex).groups;
+  var duration = 0;
+  for (let k in durationGroups) {
+    if (!SEC[k]) {
+      continue;
+    }
+    let durationInt = (durationGroups[k] ? parseInt(durationGroups[k]) : 0);
+    duration += (durationInt * SEC[k]);
+  }
+  return duration;
 }
