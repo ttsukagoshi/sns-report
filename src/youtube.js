@@ -961,29 +961,16 @@ function createYouTubeAnalyticsSummary() {
     tempSheetChannelDemographics.getRange(1, 1, bgDataChannelDemographics.length, bgDataChannelDemographics[0].length)
       .setValues(bgDataChannelDemographics);
     tempSheetVideoAnalytics.getRange(1, 1, bgDataVideoAnalyticsMod.length, bgDataVideoAnalyticsMod[0].length)
-      .setValues(bgDataVideoAnalytics);
+      .setValues(bgDataVideoAnalyticsMod);
+    // Convert bgDataVideoAnalyticsMod into an array of objects grouped by video ID
+    let bgDataVideoAnalyticsObj = groupArray_(bgDataVideoAnalyticsMod, 'VIDEO ID');
     // Create modified list of authenticated user's videos with advanced statistics
     let videoListMod = videoList.map(function (element) {
       // Name the values in element
-      let num = element[1];
-      let thumbnailUrlFunction = element[2];
-      let thumbnailUrl = element[3];
-      let videoId = element[6];
-      let videoTitle = element[7];
-      let videoDesc = element[8];
-      let videoUrl = element[9];
-      let durationSec = iso8601duration2sec_(element[10]);
-      let caption = element[11];
-      let publishedAtUtc = element[12];
-      let publishedAtLocal = element[13];
-      let privacyStatus = element[14];
-      let viewCountLatest = element[15];
-      let likeCountLatest = element[16];
-      let dislikeCountLatest = element[17];
-      let timestamp = element[0];
+      let [timestamp, num, thumbnailUrlFunction, thumbnailUrl, channelId, channelName, videoId, videoTitle, videoDesc, videoUrl, duration, caption, publishedAtUtc, publishedAtLocal, privacyStatus, viewCountLatest, likeCountLatest, dislikeCountLatest] = element;
+      let durationSec = iso8601duration2sec_(duration);
       // Key dates for advanced statistics
       let publishedAt = new Date(publishedAtUtc);
-      console.log(publishedAt)
       let publishedAtPTstring = formattedDateAnalytics_(publishedAt, 'PST'); // Published date of the video in yyyy-MM-dd of Pacific Time
       let week1 = new Date(publishedAt.setDate(publishedAt.getDate() + 7));
       let week1string = formattedDateAnalytics_(week1, 'PST');
@@ -992,6 +979,10 @@ function createYouTubeAnalyticsSummary() {
       let week12 = new Date(publishedAt.setDate(publishedAt.getDate() * 56)); // 7 + 21 + 56 = 84 (= 7 * 12)
       let week12string = formattedDateAnalytics_(week12, 'PST');
       // Advanced statistics using bgDataVideoAnalyticsMod
+      let thisVideoAnalytics = bgDataVideoAnalyticsMod[videoId];
+      let viewsWeek1 = 0;
+      let viewsWeek4 = 0;
+      let viewsWeek12 = 0;
       /////////////////////////////////////////////////////////
       let elementMod = [
         num,
@@ -1136,8 +1127,8 @@ function iso8601duration2sec_(iso8601duration) {
     minute: 60, // minutes in seconds
     hour: 60 * 60, // hours in seconds
     day: 24 * 60 * 60, // days in seconds
-    second: 1 
-  }; 
+    second: 1
+  };
   var durationRegex = /^(?<sign>-)?P(((?<year>\d+)Y)?((?<month>\d+)M)?((?<day>\d+)D)?(?:T((?<hour>\d+)H)?((?<minute>\d+)M)?((?<second>\d+)S)?)?|(?<week>\d+)W)$/;
   var durationGroups = iso8601duration.match(durationRegex).groups;
   var duration = 0;
@@ -1149,4 +1140,58 @@ function iso8601duration2sec_(iso8601duration) {
     duration += (durationInt * SEC[k]);
   }
   return duration;
+}
+
+/**
+ * Create a Javascript object from a 2d array, grouped by a given property.
+ * @param {array} data 2-dimensional array with a header as its first row.
+ * @param {string} property [Optional] Name of field name in header to group by.
+ * When property is not specified, this function will return an object with a key 'data', whose value is a simple array of objects converted from the given 2d array.
+ * If the designated property is not included in the header, this function will return an empty object.
+ * @return {Object}
+ */
+function groupArray_(data, property = null) {
+  let header = data.shift();
+  let index = header.indexOf(property);
+  if (property == null) {
+    let groupedObj = {};
+    groupedObj['data'] = data.map(function (values) {
+      return header.reduce(function (obj, key, ind) {
+        obj[key] = values[ind];
+        return obj;
+      }, {});
+    });
+    return groupedObj;
+  } else if (index < 0) {
+    let invalidProperty = {};
+    return invalidProperty;
+  } else {
+    let groupedObj = data.reduce(
+      function (accObj, curArr) {
+        let key = curArr[index];
+        if (!accObj[key]) {
+          accObj[key] = [];
+        }
+        let rowObj = createObj_(header, curArr);
+        accObj[key].push(rowObj);
+        return accObj;
+      }, {});
+    return groupedObj;
+  }
+}
+
+/**
+ * Create a Javascript object from a set of keys and values
+ * i.e., where keys = [key0, key1, ..., key[n]] and values = [value0, value1, ..., value[n]],
+ * this function will return an object = {key0: value0, ..., key[n]: value[n]}
+ * @param {array} keys 
+ * @param {array} values
+ * @return {Object} 
+ */
+function createObj_(keys, values) {
+  let obj = {};
+  for (let i = 0; i < keys.length; ++i) {
+    obj[keys[i]] = values[i];
+  }
+  return obj;
 }
