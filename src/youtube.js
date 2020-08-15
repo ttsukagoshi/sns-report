@@ -773,6 +773,8 @@ function createYouTubeAnalyticsSummary() {
   var config = getConfig_();
   var summarySheet = ss.getSheetByName(config.SHEET_NAME_YOUTUBE_SUMMARY);
   var videoSheet = ss.getSheetByName(config.SHEET_NAME_YOUTUBE_VIDEOS);
+  var videoSheetRowOffset = 4; // Starting row number for data in videoSheet
+  var videoSheetColOffset = 2; // Starting column number for data in videoSheet
   var now = new Date();
   try {
     // Channel ID
@@ -787,7 +789,7 @@ function createYouTubeAnalyticsSummary() {
     }
     let targetChannelName = myChannelListFull.filter(element => element.id == targetChannelId)[0].snippet.title;
     // Report month
-    let reportMonth = summarySheet.getRange(4, 5).getValue();
+    let reportMonth = summarySheet.getRange(4, 5).getValue(); // Assuming that the target report month is entered in this cell
     if (!reportMonth) {
       throw new Error('No text entered for report month.');
     } else if (!reportMonth.match(/^\d{4}-\d{2}$/)) {
@@ -803,11 +805,11 @@ function createYouTubeAnalyticsSummary() {
     // Update Channel/Video list
     let muteUiAlert = true;
     let channelList = updateYouTubeSummaryChannelList(muteUiAlert);
-    /* un-comment-out when all is complete///////////////////////////////////////////////////
     let videoList = updateYouTubeSummaryVideoList(muteUiAlert);
+    /* for testing
+    let videoList = ss.getSheetByName(config.SHEET_NAME_MY_VIDEOS).getDataRange().getValues();
+    videoList.shift();
     */
-    let videoList = ss.getSheetByName(config.SHEET_NAME_MY_VIDEOS).getDataRange().getValues();/////////////////////////////////////////////////
-    videoList.shift();///////////////////////////////////////////////////
     let channelListTarget = channelList.filter(element => element[4] == targetChannelId);
     let channelListSummary = channelListTarget.map(element => [
       element[2], // thumbnail image function
@@ -941,9 +943,9 @@ function createYouTubeAnalyticsSummary() {
       } else {
         let dislikesInv = -parseInt(element[5]); // Invert postive counts of dislikes to negative for better visualization
         let subscribersTotal = parseInt(element[6]) - parseInt(element[7]); // [SUBSCRIBERS GAINED] - [SUBSCRIBERS LOST]
-        let estimatedSecWatched = element[8] * 60; // Convert [ESTIMATED MINUTES WATCHED] into seconds
+        let estimatedSecWatchedLatest = element[8] * 60; // Convert [ESTIMATED MINUTES WATCHED] into seconds
         // Add column(s) to the original data
-        let concatElement = element.concat([dislikesInv, subscribersTotal, estimatedSecWatched]);
+        let concatElement = element.concat([dislikesInv, subscribersTotal, estimatedSecWatchedLatest]);
         return concatElement;
       }
     });
@@ -967,23 +969,138 @@ function createYouTubeAnalyticsSummary() {
     // Create modified list of authenticated user's videos with advanced statistics
     let videoListMod = videoList.map(function (element) {
       // Name the values in element
-      let [timestamp, num, thumbnailUrlFunction, thumbnailUrl, channelId, channelName, videoId, videoTitle, videoDesc, videoUrl, duration, caption, publishedAtUtc, publishedAtLocal, privacyStatus, viewCountLatest, likeCountLatest, dislikeCountLatest] = element;
+      let [timestamp, num, thumbnailUrlFunction, thumbnailUrl, channelId, channelName, videoId, videoTitle, videoDesc, videoUrl, duration, caption, publishedAtUtc, publishedAtLocal, privacyStatus, latestViewCount, latestLikeCount, latestDislikeCount] = element;
       let durationSec = iso8601duration2sec_(duration);
       // Key dates for advanced statistics
       let publishedAt = new Date(publishedAtUtc);
-      let publishedAtPTstring = formattedDateAnalytics_(publishedAt, 'PST'); // Published date of the video in yyyy-MM-dd of Pacific Time
       let week1 = new Date(publishedAt.setDate(publishedAt.getDate() + 7));
       let week1string = formattedDateAnalytics_(week1, 'PST');
       let week4 = new Date(publishedAt.setDate(publishedAt.getDate() + 21)); // 7 + 21 = 28 (= 7 * 4)
       let week4string = formattedDateAnalytics_(week4, 'PST');
       let week12 = new Date(publishedAt.setDate(publishedAt.getDate() * 56)); // 7 + 21 + 56 = 84 (= 7 * 12)
       let week12string = formattedDateAnalytics_(week12, 'PST');
+      let week1Stats = {
+        'days': [],
+        'views': 0,
+        'likes': 0,
+        'dislikes': 0,
+        'subscribersGained': 0,
+        'subscribersLost': 0,
+        'estimatedSecWatched': 0,
+        'cardImpression': 0,
+        'cardClicks': 0
+      };
+      let week4Stats = {
+        'days': [],
+        'views': 0,
+        'likes': 0,
+        'dislikes': 0,
+        'subscribersGained': 0,
+        'subscribersLost': 0,
+        'estimatedSecWatched': 0,
+        'cardImpression': 0,
+        'cardClicks': 0
+      };
+      let week12Stats = {
+        'days': [],
+        'views': 0,
+        'likes': 0,
+        'dislikes': 0,
+        'subscribersGained': 0,
+        'subscribersLost': 0,
+        'estimatedSecWatched': 0,
+        'cardImpression': 0,
+        'cardClicks': 0
+      };
       // Advanced statistics using bgDataVideoAnalyticsMod
-      let thisVideoAnalytics = bgDataVideoAnalyticsMod[videoId];
-      let viewsWeek1 = 0;
-      let viewsWeek4 = 0;
-      let viewsWeek12 = 0;
-      /////////////////////////////////////////////////////////
+      let thisVideoAnalytics = bgDataVideoAnalyticsObj[videoId];
+      for (let i = 0; i < thisVideoAnalytics.length; i++) {
+        let dailyData = thisVideoAnalytics[i];
+        if (dailyData['DAY'] <= week1string) {
+          week1Stats.days.push(dailyData['DAY']);
+          week4Stats.days.push(dailyData['DAY']);
+          week12Stats.days.push(dailyData['DAY']);
+          // Views
+          week1Stats.views += dailyData['VIEWS'];
+          week4Stats.views += dailyData['VIEWS'];
+          week12Stats.views += dailyData['VIEWS'];
+          // Likes
+          week1Stats.likes += dailyData['LIKES'];
+          week4Stats.likes += dailyData['LIKES'];
+          week12Stats.likes += dailyData['LIKES'];
+          // Dislikes
+          week1Stats.dislikes += dailyData['DISLIKES'];
+          week4Stats.dislikes += dailyData['DISLIKES'];
+          week12Stats.dislikes += dailyData['DISLIKES'];
+          // Subscribers Gained
+          week1Stats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          week4Stats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          week12Stats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          // Subscribers Lost
+          week1Stats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          week4Stats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          week12Stats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          // Estimated Seconds Watched
+          week1Stats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          week4Stats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          week12Stats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          // Card Impression
+          week1Stats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          week4Stats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          week12Stats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          // Card Clicks
+          week1Stats.cardClicks += dailyData['CARD CLICKS'];
+          week4Stats.cardClicks += dailyData['CARD CLICKS'];
+          week12Stats.cardClicks += dailyData['CARD CLICKS'];
+        } else if (dailyData['DAY'] > week1string && dailyData['DAY'] <= week4string) {
+          week4Stats.days.push(dailyData['DAY']);
+          week12Stats.days.push(dailyData['DAY']);
+          // Views
+          week4Stats.views += dailyData['VIEWS'];
+          week12Stats.views += dailyData['VIEWS'];
+          // Likes
+          week4Stats.likes += dailyData['LIKES'];
+          week12Stats.likes += dailyData['LIKES'];
+          // Dislikes
+          week4Stats.dislikes += dailyData['DISLIKES'];
+          week12Stats.dislikes += dailyData['DISLIKES'];
+          // Subscribers Gained
+          week4Stats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          week12Stats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          // Subscribers Lost
+          week4Stats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          week12Stats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          // Estimated Seconds Watched
+          week4Stats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          week12Stats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          // Card Impression
+          week4Stats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          week12Stats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          // Card Clicks
+          week4Stats.cardClicks += dailyData['CARD CLICKS'];
+          week12Stats.cardClicks += dailyData['CARD CLICKS'];
+        } else if (dailyData['DAY'] > week4string && dailyData['DAY'] <= week12string) {
+          week12Stats.days.push(dailyData['DAY']);
+          // Views
+          week12Stats.views += dailyData['VIEWS'];
+          // Likes
+          week12Stats.likes += dailyData['LIKES'];
+          // Dislikes
+          week12Stats.dislikes += dailyData['DISLIKES'];
+          // Subscribers Gained
+          week12Stats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          // Subscribers Lost
+          week12Stats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          // Estimated Seconds Watched
+          week12Stats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          // Card Impression
+          week12Stats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          // Card Clicks
+          week12Stats.cardClicks += dailyData['CARD CLICKS'];
+        } else {
+          continue;
+        }
+      }
       let elementMod = [
         num,
         thumbnailUrlFunction,
@@ -997,20 +1114,52 @@ function createYouTubeAnalyticsSummary() {
         publishedAtUtc,
         publishedAtLocal,
         privacyStatus,
-        viewCountLatest,
-        likeCountLatest,
-        dislikeCountLatest,
+        latestViewCount,
+        latestLikeCount,
+        latestDislikeCount,
+        week1Stats.views,
+        week1Stats.likes,
+        week1Stats.dislikes,
+        week1Stats.subscribersGained,
+        week1Stats.subscribersLost,
+        week1Stats.estimatedSecWatched,
+        100*((week1Stats.estimatedSecWatched/week1Stats.views)/durationSec),
+        week1Stats.cardImpression,
+        week1Stats.cardClicks,
+        week4Stats.views,
+        week4Stats.likes,
+        week4Stats.dislikes,
+        week4Stats.subscribersGained,
+        week4Stats.subscribersLost,
+        week4Stats.estimatedSecWatched,
+        100*((week4Stats.estimatedSecWatched/week4Stats.views)/durationSec),
+        week4Stats.cardImpression,
+        week4Stats.cardClicks,
+        week12Stats.views,
+        week12Stats.likes,
+        week12Stats.dislikes,
+        week12Stats.subscribersGained,
+        week12Stats.subscribersLost,
+        week12Stats.estimatedSecWatched,
+        100*((week12Stats.estimatedSecWatched/week12Stats.views)/durationSec),
+        week12Stats.cardImpression,
+        week12Stats.cardClicks,
         timestamp
       ];
       return elementMod;
     });
-    ////////////////////////////////// setValues(videoListMod);
-    ui.alert(`Report for ${reportMonth} of YouTube channel "${targetChannelName}" created.`);
+    // Delete existing data
+    videoSheet.getRange(videoSheetRowOffset, videoSheetColOffset, videoSheet.getLastRow() - videoSheetRowOffset + 1, videoSheet.getLastColumn() - videoSheetColOffset + 1)
+      .deleteCells(SpreadsheetApp.Dimension.ROWS);
+    // Enter new data
+    videoSheet.getRange(videoSheetRowOffset, videoSheetColOffset, videoListMod.length, videoListMod[0].length)
+      .setValues(videoListMod);
+    let scriptEnd = new Date();
+    ui.alert(`Report for ${reportMonth} of YouTube channel "${targetChannelName}" created.\nScript Time: ${(scriptEnd.getTime() - now.getTime()) / 1000} secs.`);
   } catch (error) {
     ui.alert(errorMessage_(error));
   }
 }
-
 
 /////////////////////////////
 // Configurations and Misc //
