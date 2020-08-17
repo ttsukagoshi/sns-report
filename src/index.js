@@ -30,7 +30,7 @@
 // }
 // See https://github.com/gsuitedevs/apps-script-oauth2
 
-var logSheetName = '99_Log';
+var LOG_SHEET_NAME = '99_Log';
 
 /**
  * onOpen()

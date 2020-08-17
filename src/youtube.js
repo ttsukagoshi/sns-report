@@ -20,7 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Global variables are defined on index.js
+var YOUTUBE_DATA_API_VERSION = 'v3';
+var YOUTUBE_ANALYTICS_API_VER = 'v2';
+// Other global variables are defined on index.js
 
 ///////////////////
 // Authorize 認証//
@@ -167,14 +169,14 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
       .setValues(channelList);
     // Log & Notify
-    enterLog_(scriptProperties.currentSpreadsheetId, logSheetName, 'Success: updated channel list.', now)
+    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, 'Success: updated channel list.', now)
     if (!muteUiAlert) {
       ui.alert('Completed', 'Updated summary channel list.', ui.ButtonSet.OK);
     }
     return channelList;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(scriptProperties.currentSpreadsheetId, logSheetName, message, now)
+    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, message, now)
     if (!muteUiAlert) {
       ui.alert('Error', message, ui.ButtonSet.OK);
     }
@@ -255,14 +257,14 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, videoList.length, videoList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
       .setValues(videoList);
     // Log & Notify
-    enterLog_(scriptProperties.currentSpreadsheetId, logSheetName, 'Success: updated video list.', now);
+    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, 'Success: updated video list.', now);
     if (!muteUiAlert) {
       ui.alert('Completed', 'Updated summary video list.', ui.ButtonSet.OK);
     }
     return videoList;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(scriptProperties.currentSpreadsheetId, logSheetName, message, now);
+    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, message, now);
     if (!muteUiAlert) {
       ui.alert('Error', message, ui.ButtonSet.OK);
     }
@@ -423,7 +425,7 @@ function youtubeData_(resourceType, parameters) {
     if (!youtubeAPIService.hasAccess()) {
       throw new Error('Unauthorized. Get authorized by Menu > YouTube > Authorize');
     }
-    let baseUrl = `https://www.googleapis.com/youtube/v3/${resourceType}`;
+    let baseUrl = `https://www.googleapis.com/youtube/${YOUTUBE_DATA_API_VERSION}/${resourceType}`;
     let paramString = '?';
     for (let k in parameters) {
       let param = `${k}=${encodeURIComponent(parameters[k])}`;
@@ -529,14 +531,14 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
       // Get latest updated date
       updatedLatestDateObj = getLatestDate_(targetSheet, 1);
       // Log
-      enterLog_(targetSpreadsheet.getId(), logSheetName, `Success: updated YouTube channel analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj)}.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube channel analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj)}.`, now);
     } else {
-      enterLog_(targetSpreadsheet.getId(), logSheetName, `Success: no updates for YouTube channel analytics.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: no updates for YouTube channel analytics.`, now);
     }
     return updatedLatestDateObj;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(targetSpreadsheet.getId(), logSheetName, message, now);
+    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
     throw new Error(message);
   }
 }
@@ -625,11 +627,11 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
     // Copy on spreadsheet
     targetSheet.getRange(2, 1, existingDataUpdate.length, existingDataUpdate[0].length).setValues(existingDataUpdate); // Assuming that the 1st row of the targetSheet is header row and that the actual data starts from the 2nd row
     // Log
-    enterLog_(targetSpreadsheet.getId(), logSheetName, `Success: updated YouTube channel demographics for ${latestMonth} to ${thisYearMonth}.`, now);
+    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube channel demographics for ${latestMonth} to ${thisYearMonth}.`, now);
     return thisYearMonth;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(targetSpreadsheet.getId(), logSheetName, message, now);
+    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
     throw new Error(error);
   }
 }
@@ -695,14 +697,14 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
       // Get latest updated date
       updatedLatestDateObj = getLatestDate_(targetSheet, 1);
       // Log
-      enterLog_(targetSpreadsheet.getId(), logSheetName, `Success: updated YouTube video analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj)}.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube video analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj)}.`, now);
     } else {
-      enterLog_(targetSpreadsheet.getId(), logSheetName, `Success: no updates for YouTube video analytics.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: no updates for YouTube video analytics.`, now);
     }
     return updatedLatestDateObj;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(targetSpreadsheet.getId(), logSheetName, message, now);
+    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
     throw new Error(message);
   }
 }
@@ -735,7 +737,7 @@ function youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids = 'chann
     if (!youtubeAPIService.hasAccess()) {
       throw new Error('Unauthorized. Get authorized by Menu > YouTube > Authorize');
     }
-    let baseUrl = `https://youtubeanalytics.googleapis.com/v2/reports`;
+    let baseUrl = `https://youtubeanalytics.googleapis.com/${YOUTUBE_ANALYTICS_API_VER}/reports`;
     let paramString = '?';
     for (let k in parameters) {
       let param = `${k}=${encodeURIComponent(parameters[k])}`;
