@@ -20,9 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-var YOUTUBE_DATA_API_VERSION = 'v3';
-var YOUTUBE_ANALYTICS_API_VERSION = 'v2';
-// Other global variables are defined on index.js
+const YOUTUBE_DATA_API_VERSION = 'v3';
+const YOUTUBE_ANALYTICS_API_VERSION = 'v2';
+const YOUTUBE_NEW_SPREADSHEET_ID = '16duRDHJ8d6k6xy0C2_m2IkHxIJc-OPLp7SuQD02gzig'; // Spreadsheet ID to use as template for new spreadsheet
+// Other global variables and common functions are defined on index.js
 
 ///////////////////
 // Authorize 認証//
@@ -504,7 +505,7 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     startDateObj = new Date(latestDate.setDate(latestDate.getDate() + 1));
     // Setting parameters for youtubeAnalyticsReportsQuery_()
     let startDate = formattedDateAnalytics_(startDateObj);
-    let endDateObj = (yearLimit ? new Date(targetYear, 11, 31) : now);
+    let endDateObj = now;
     let endDate = formattedDateAnalytics_(endDateObj);
     let metrics = 'views,likes,dislikes,subscribersGained,subscribersLost,estimatedMinutesWatched,averageViewDuration,cardImpressions,cardClicks';
     let ids = 'channel==MINE';
@@ -519,13 +520,19 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
       // Get day-by-day count of published videos per channel
       let myVideosCountByPubDate = youtubeMyVideoCountByPubDate_();
       // Process data for later analysis
-      let dataMod = data.map(function (row) {
+      let dataMod = data.reduce((acc, row) => {
         // Assuming that the DAY and CHANNEL ID fields come in the 1st and 2nd column of 'row', respectively
-        let publishedVideoCount = (myVideosCountByPubDate[row[1]][row[0]] ? myVideosCountByPubDate[row[1]][row[0]] : 0);
-        let yearMonth = row[0].slice(0, 7);
-        let concatRow = row.concat([publishedVideoCount, yearMonth]);
-        return concatRow;
-      });
+        if ((yearLimit && row[0] <= `${targetYear}-12-31`) || !yearLimit) {
+          let publishedVideoCount = (myVideosCountByPubDate[row[1]][row[0]] ? myVideosCountByPubDate[row[1]][row[0]] : 0);
+          let yearMonth = row[0].slice(0, 7);
+          let concatRow = row.concat([publishedVideoCount, yearMonth]);
+          acc.data.push(concatRow);
+        }
+        if (row[0] > acc.latest) {
+          acc.latest = row[0];
+        }
+        return acc;
+      }, {data: [], latest: `${targetYear}-01-01`});
       // Copy on spreadsheet
       targetSheet.getRange(targetSheet.getLastRow() + 1, 1, dataMod.length, dataMod[0].length).setValues(dataMod);
       // Get latest updated date
@@ -1125,7 +1132,7 @@ function createYouTubeAnalyticsSummary() {
         week1Stats.subscribersGained,
         week1Stats.subscribersLost,
         week1Stats.estimatedSecWatched,
-        100*((week1Stats.estimatedSecWatched/week1Stats.views)/durationSec),
+        100 * ((week1Stats.estimatedSecWatched / week1Stats.views) / durationSec),
         week1Stats.cardImpression,
         week1Stats.cardClicks,
         week4Stats.views,
@@ -1134,7 +1141,7 @@ function createYouTubeAnalyticsSummary() {
         week4Stats.subscribersGained,
         week4Stats.subscribersLost,
         week4Stats.estimatedSecWatched,
-        100*((week4Stats.estimatedSecWatched/week4Stats.views)/durationSec),
+        100 * ((week4Stats.estimatedSecWatched / week4Stats.views) / durationSec),
         week4Stats.cardImpression,
         week4Stats.cardClicks,
         week12Stats.views,
@@ -1143,7 +1150,7 @@ function createYouTubeAnalyticsSummary() {
         week12Stats.subscribersGained,
         week12Stats.subscribersLost,
         week12Stats.estimatedSecWatched,
-        100*((week12Stats.estimatedSecWatched/week12Stats.views)/durationSec),
+        100 * ((week12Stats.estimatedSecWatched / week12Stats.views) / durationSec),
         week12Stats.cardImpression,
         week12Stats.cardClicks,
         timestamp
