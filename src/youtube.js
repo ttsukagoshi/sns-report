@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 var YOUTUBE_DATA_API_VERSION = 'v3';
-var YOUTUBE_ANALYTICS_API_VER = 'v2';
+var YOUTUBE_ANALYTICS_API_VERSION = 'v2';
 // Other global variables are defined on index.js
 
 ///////////////////
@@ -166,7 +166,7 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
       .setValues(channelList);
     //// Add row(s) to current spreadsheet of this year
     let currentSheet = SpreadsheetApp.openById(scriptProperties.currentSpreadsheetId).getSheetByName(config.SHEET_NAME_MY_CHANNELS);
-    currentSheet.getRange(currentSheet.getLastRow() + 1, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
+    currentSheet.getRange(currentSheet.getLastRow() + 1, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
       .setValues(channelList);
     // Log & Notify
     enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, 'Success: updated channel list.', now)
@@ -737,7 +737,7 @@ function youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids = 'chann
     if (!youtubeAPIService.hasAccess()) {
       throw new Error('Unauthorized. Get authorized by Menu > YouTube > Authorize');
     }
-    let baseUrl = `https://youtubeanalytics.googleapis.com/${YOUTUBE_ANALYTICS_API_VER}/reports`;
+    let baseUrl = `https://youtubeanalytics.googleapis.com/${YOUTUBE_ANALYTICS_API_VERSION}/reports`;
     let paramString = '?';
     for (let k in parameters) {
       let param = `${k}=${encodeURIComponent(parameters[k])}`;
