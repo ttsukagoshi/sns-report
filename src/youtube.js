@@ -455,8 +455,9 @@ function youtubeData_(resourceType, parameters) {
 
 /**
  * Get latest analytics data for YouTube channel and videos that the authorized user owns.
+ * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
  */
-function updateYouTubeAnalyticsData() {
+function updateYouTubeAnalyticsData(muteUiAlert = false) {
   var ui = SpreadsheetApp.getUi();
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
   var currentYear = scriptProperties.currentYear;
@@ -466,9 +467,11 @@ function updateYouTubeAnalyticsData() {
     let updatedChannelAnalyticsDate = youtubeAnalyticsChannel(currentYear, yearLimit);
     let updateChannelDemographics = youtubeAnalyticsDemographics(currentYear, yearLimit);
     let updatedVideoAnalyticsDate = youtubeAnalyticsVideo(currentYear, yearLimit);
+    console.log(updateChannelDemographics);//////////////////////////////////
+    console.log(updatedVideoAnalyticsDate);//////////////////////////////////
     // Determine change-of-the-year
     let newYear = (
-      formattedDateAnalytics_(updatedChannelAnalyticsDate).slice(-5) == '12-31'
+      updatedChannelAnalyticsDate.latest.getFullYear() > currentYear
       && updateChannelDemographics.slice(-2) == '12'
       && formattedDateAnalytics_(updatedVideoAnalyticsDate).slice(-5) == '12-31'
     );
@@ -477,7 +480,9 @@ function updateYouTubeAnalyticsData() {
     // create new spreadsheet in the designatd google drive folder, get URL, record the URL to spreadsheet list
     // update scriptProperties.currentYear and .currentSpreadsheetId
   } catch (error) {
-    ui.alert(errorMessage_(error));
+    if (!muteUiAlert) {
+      ui.alert(errorMessage_(error));
+    }
   }
 
 }
@@ -487,7 +492,9 @@ function updateYouTubeAnalyticsData() {
  * If no previous data is available, this function will retrieve channel analytics starting from Jan 1 of the target year.
  * @param {number} targetYear Target year in yyyy
  * @param {boolean} yearLimit When true, limit the latest data to obtain to the end of the targetYear, i.e., Dec 31. Defaults to true.
- * @returns {Date} Latest date object of the updated analytics data.
+ * @returns {Object} JavaScript object with two keys: latestDateOnSpreadsheet and latestDateReturned.
+ * The value of the former is the latest date object on the updated analytics spreadsheet,
+ * while the latter is paired with a date object value expressing the latest date returned in the original youtubeAnalyticsReportsQuery_().
  */
 function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
   // Get target spreadsheet
@@ -515,7 +522,11 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     // Get analytics data
     let reports = JSON.parse(youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids, options));
     let data = reports.rows.slice();
-    let updatedLatestDateObj = getLatestDate_(targetSheet, 1);
+    let currentLatestOnSpreadsheet = getLatestDate_(targetSheet, 1);
+    let updatedLatestDateObj = {
+      latestDateOnSpreadsheet: currentLatestOnSpreadsheet,
+      latestDateReturned: currentLatestOnSpreadsheet
+    };
     if (data && data.length > 0) {
       // Get day-by-day count of published videos per channel
       let myVideosCountByPubDate = youtubeMyVideoCountByPubDate_();
@@ -534,11 +545,12 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
         return acc;
       }, {data: [], latest: `${targetYear}-01-01`});
       // Copy on spreadsheet
-      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, dataMod.length, dataMod[0].length).setValues(dataMod);
+      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, dataMod.data.length, dataMod.data[0].length).setValues(dataMod.data);
       // Get latest updated date
-      updatedLatestDateObj = getLatestDate_(targetSheet, 1);
+      updatedLatestDateObj.latestDateOnSpreadsheet = getLatestDate_(targetSheet, 1);
+      updatedLatestDateObj.latestDateReturned = yMd2Date_(dataMod.latest);
       // Log
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube channel analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj)}.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube channel analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)}.`, now);
     } else {
       enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: no updates for YouTube channel analytics.`, now);
     }
@@ -591,7 +603,8 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
     // Check the month of the latest analytics data and define startDate for youtubeAnalyticsReportsQuery_()
     // If the value returned for getLatestMonth_() is null, i.e., there are no previous month recorded in targetSheet,
     // latestMonth will be January of the targetYear ('yyyy-01').
-    let latestMonth = (getLatestMonth_(targetSheet, 1) ? getLatestMonth_(targetSheet, 1) : targetYear + '-01'); // Assuming that the year-month (yyyy-MM) is recorded on column A of the targetSheet.
+    let latestMonthPre = getLatestMonth_(targetSheet, 1);
+    let latestMonth = (latestMonthPre ? latestMonthPre : targetYear + '-01'); // Assuming that the year-month (yyyy-MM) is recorded on column A of the targetSheet.
     let latestMonthDate = yearMonth2Date_(latestMonth); // latestMonth in Date object (the first day of that yyyy-MM)
     // Get existing data in form of a 2d-array to overwrite the latest data
     let existingData = targetSheet.getDataRange().getValues();
@@ -1177,7 +1190,7 @@ function createYouTubeAnalyticsSummary() {
 /**
  * Gets the latest listed date string (yyyy-MM-dd format) in a specified column of a Spreadsheet sheet, in form of Date object.
  * Since yyyy-MM-dd format text will be automatically converted into a Date object in Google Spreadsheet,
- * this function assumes that the cell values obtained by getValues() function is an array of date objects.
+ * this function will revert the data into string by .setNumberFormat('@')
  * @param {Object} sheet Sheet object of Google Spreadsheet. https://developers.google.com/apps-script/reference/spreadsheet/sheet
  * @param {number} columnNum Column number that the date is listed on.
  * @param {number} rowOffset [Optional] Number of rows to offset to get the body of the dates listed.
@@ -1189,32 +1202,10 @@ function getLatestDate_(sheet, columnNum, rowOffset = 1) {
     return null;
   } else {
     let dates = sheet.getRange(1 + rowOffset, columnNum, sheet.getLastRow() - rowOffset, 1).setNumberFormat('@').getValues();
-    let latestDateObj = dates.reduce(function (curLatest, date) {
+    let latestDateObj = dates.reduce((curLatest, date) => {
       return (yMd2Date_(date[0]).getTime() >= yMd2Date_(curLatest[0]).getTime() || !curLatest ? date : curLatest);
     });
     return yMd2Date_(latestDateObj[0]);
-  }
-}
-
-/**
- * Gets the latest listed year-month string (yyyy-MM format) in a specified column of a Spreadsheet sheet.
- * @param {Object} sheet Sheet object of Google Spreadsheet. https://developers.google.com/apps-script/reference/spreadsheet/sheet
- * @param {number} columnNum Column number that the date is listed on.
- * @param {number} rowOffset [Optional] Number of rows to offset to get the body of the dates listed.
- * rowOffset defaults to 1; i.e., it is assumed, by default, that the dates start from the second row, where the first row is used as the header row. 
- * @return {string} Returns null if no date was available
- */
-function getLatestMonth_(sheet, columnNum, rowOffset = 1) {
-  if (sheet.getLastRow() <= rowOffset) {
-    return null;
-  } else {
-    let yearMonths = sheet.getRange(1 + rowOffset, columnNum, sheet.getLastRow() - rowOffset, 1).setNumberFormat('@').getValues();
-    let latestYearMonth = yearMonths.reduce(function (curLatest, yearMonth) {
-      let curLatestDate = yearMonth2Date_(curLatest[0]);
-      let yearMonthDate = yearMonth2Date_(yearMonth[0]);
-      return (yearMonthDate.getTime() >= curLatestDate.getTime() || !curLatest ? yearMonth : curLatest);
-    });
-    return latestYearMonth[0];
   }
 }
 
@@ -1226,6 +1217,28 @@ function getLatestMonth_(sheet, columnNum, rowOffset = 1) {
 function yMd2Date_(yMd) {
   let newDate = new Date(yMd.slice(0, 4), parseInt(yMd.slice(5, 7)) - 1, yMd.slice(-2));
   return newDate;
+}
+
+/**
+ * Gets the latest listed year-month string (yyyy-MM format) in a specified column of a Spreadsheet sheet.
+ * @param {Object} sheet Sheet object of Google Spreadsheet. https://developers.google.com/apps-script/reference/spreadsheet/sheet
+ * @param {number} columnNum Column number that the date is listed on.
+ * @param {number} rowOffset [Optional] Number of rows to offset to get the body of the dates listed.
+ * rowOffset defaults to 1; i.e., it is assumed, by default, that the dates start from the second row, where the first row is used as the header row. 
+ * @return {string} String in yyyy-MM format. Null if no date was available.
+ */
+function getLatestMonth_(sheet, columnNum, rowOffset = 1) {
+  if (sheet.getLastRow() <= rowOffset) {
+    return null;
+  } else {
+    let yearMonths = sheet.getRange(1 + rowOffset, columnNum, sheet.getLastRow() - rowOffset, 1).setNumberFormat('@').getValues();
+    let latestYearMonth = yearMonths.reduce((curLatest, yearMonth) => {
+      let curLatestDate = yearMonth2Date_(curLatest[0]);
+      let yearMonthDate = yearMonth2Date_(yearMonth[0]);
+      return (yearMonthDate.getTime() >= curLatestDate.getTime() || !curLatest ? yearMonth : curLatest);
+    });
+    return latestYearMonth[0];
+  }
 }
 
 /**
