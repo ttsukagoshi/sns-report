@@ -472,7 +472,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false) {
     // Determine change-of-the-year
     let newYear = (
       updatedChannelAnalyticsDate.latest.getFullYear() > currentYear
-      && updateChannelDemographics.slice(-2) == '12'
+      && updateChannelDemographics >= `${currentYear}-12`
       && formattedDateAnalytics_(updatedVideoAnalyticsDate).slice(-5) == '12-31'
     );
     console.log(newYear);///////////////////
@@ -512,7 +512,7 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     startDateObj = new Date(latestDate.setDate(latestDate.getDate() + 1));
     // Setting parameters for youtubeAnalyticsReportsQuery_()
     let startDate = formattedDateAnalytics_(startDateObj);
-    let endDateObj = now;
+    let endDateObj = new Date(now.getTime());
     let endDate = formattedDateAnalytics_(endDateObj);
     let metrics = 'views,likes,dislikes,subscribersGained,subscribersLost,estimatedMinutesWatched,averageViewDuration,cardImpressions,cardClicks';
     let ids = 'channel==MINE';
@@ -543,7 +543,7 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
           acc.latest = row[0];
         }
         return acc;
-      }, {data: [], latest: `${targetYear}-01-01`});
+      }, { data: [], latest: `${targetYear}-01-01` });
       // Copy on spreadsheet
       targetSheet.getRange(targetSheet.getLastRow() + 1, 1, dataMod.data.length, dataMod.data[0].length).setValues(dataMod.data);
       // Get latest updated date
@@ -610,14 +610,15 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
     let existingData = targetSheet.getDataRange().getValues();
     existingData.shift(); // Assuming that the first row is a header row.
     let existingDataUpdate = existingData.filter(element => element[0] !== latestMonth);
-    // Determine the final endDate as currentLatestMonthDate. If yearLimit is true, this will be no later than December of the targetYear.
+    // Determine the final endDate as currentLatestMonthDate. If yearLimit is true, this will be no later than December 31st of the targetYear.
     let currentLatestMonthDate = (
       yearLimit == true && parseInt(Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy')) > parseInt(targetYear)
-        ? new Date(targetYear, 11, 1)
+        ? new Date(targetYear, 11, 31)
         : now
     );
     // Set common parameters for youtubeAnalyticsReportsQuery_()
     let startDate = latestMonth + '-01'; // This must be yyyy-MM-01, i.e., the first day of the target month(s) for this query
+    let endDatePre = new Date(latestMonthDate.getTime());
     let endDate = '';
     let metrics = 'viewerPercentage';
     let ids = 'channel==MINE';
@@ -629,7 +630,9 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
     let rowsData = [];
     while (latestMonthDate.getTime() <= currentLatestMonthDate.getTime()) {
       // Define endDate
-      endDate = formattedDateAnalytics_(new Date(latestMonthDate.setMonth(latestMonthDate.getMonth() + 1)));
+      endDatePre = new Date(latestMonthDate.setMonth(latestMonthDate.getMonth() + 1));
+      endDate = formattedDateAnalytics_(endDatePre.setDate(endDatePre.getDate() - 1));
+      console.log(`endDate for youtubeAnalyticsDemographics: ${endDate}`);////////////////////////
       // Define thisYearMonth
       thisYearMonth = startDate.slice(0, 7);
       // API query
@@ -642,7 +645,7 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
         existingDataUpdate.push(element);
       }
       // Set variable(s) for next loop
-      startDate = endDate.slice();
+      startDate = formattedDateAnalytics_(latestMonthDate);
     }
     // Copy on spreadsheet
     targetSheet.getRange(2, 1, existingDataUpdate.length, existingDataUpdate[0].length).setValues(existingDataUpdate); // Assuming that the 1st row of the targetSheet is header row and that the actual data starts from the 2nd row
@@ -680,7 +683,7 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
 
     // Setting parameters for youtubeAnalyticsReportsQuery_()
     let startDate = formattedDateAnalytics_(startDateObj);
-    let endDateObj = (yearLimit ? new Date(targetYear, 11, 31) : now);
+    let endDateObj = new Date(now.getTime());
     let endDate = formattedDateAnalytics_(endDateObj);
     let metrics = 'views,likes,dislikes,subscribersGained,subscribersLost,estimatedMinutesWatched,averageViewDuration,cardImpressions,cardClicks';
     let ids = 'channel==MINE';
@@ -691,6 +694,26 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
     // Get full list of videos owned by the authorized user
     let videoList = youtubeMyVideoList_();
     // Get analytics data
+    let data = videoList.reduce((accData, video) => {
+      let videoId = video.id.videoId;
+      let channelId = video.snippet.channelId;
+      options.filters = `video==${videoId}`;
+      let rawAnalytics = JSON.parse(youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids, options)).rows;
+      let analytics = rawAnalytics.reduce((accAnalytics, dayVideo) => {
+        let yearMonth = dayVideo[0].slice(0, 7);
+        if (yearLimit && dayVideo[0] <= `${targetYear}-12-31` || !yearLimit) {
+          // Assuming that the first column is the 'day' column, insert channel ID and video ID to the day-by-day data array
+          dayVideo.splice(1, 0, channelId, videoId);
+          accAnalytics.dailyVideoAnalytics.push(dayVideo);
+        }
+        ////// update accAnalytics.latest
+        return accAnalytics;
+      }, {dailyVideoAnalytics: [], latest: `${targetYear}-01-01`});
+      //////////
+      accData.videoData = accData.videoData.concat(analytics.data);
+      return accData;
+    }, { videoData: [], latest: `${targetYear}-01-01` });
+    /*
     let data = [];
     for (let i = 0; i < videoList.length; i++) {
       let video = videoList[i];
@@ -705,10 +728,11 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
         data.push(dayVideo);
       }
     }
+    */
     // Copy on spreadsheet
     let updatedLatestDateObj = getLatestDate_(targetSheet, 1);
     if (data && data.length > 0) {
-      let dataMod = data.map(function (row) {
+      let dataMod = data.map(function (row) {///////////////////
         let yearMonth = row[0].slice(0, 7);
         let concatRow = row.concat([yearMonth]);
         return concatRow;
