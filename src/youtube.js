@@ -20,9 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// API versions
 const YOUTUBE_DATA_API_VERSION = 'v3';
 const YOUTUBE_ANALYTICS_API_VERSION = 'v2';
-const YOUTUBE_NEW_SPREADSHEET_ID = '16duRDHJ8d6k6xy0C2_m2IkHxIJc-OPLp7SuQD02gzig'; // Spreadsheet ID to use as template for new spreadsheet
+// Spreadsheet ID to use as template for creating a new spreadsheet to enter YouTube analytics data
+const YOUTUBE_NEW_SPREADSHEET_ID = '16duRDHJ8d6k6xy0C2_m2IkHxIJc-OPLp7SuQD02gzig';
 // Other global variables and common functions are defined on index.js
 
 ///////////////////
@@ -456,33 +458,78 @@ function youtubeData_(resourceType, parameters) {
 /**
  * Get latest analytics data for YouTube channel and videos that the authorized user owns.
  * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
+ * @param {boolean} muteMailNotification [Optional] Mute email notification when true; defaults to true.
  */
-function updateYouTubeAnalyticsData(muteUiAlert = false) {
+function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = true) {
   var ui = SpreadsheetApp.getUi();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var myEmail = Session.getActiveUser().getEmail();
+  var mailTemplate =
+    `This is an automatic mail that can be stopped or modified at:\n${ss.getUrl()}\n\n`
+    + 'For more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report';
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
-  var currentYear = scriptProperties.currentYear;
   var yearLimit = true;
   try {
+    let currentYear = parseInt(scriptProperties.currentYear);
     // Get latest data
     let updatedChannelAnalyticsDate = youtubeAnalyticsChannel(currentYear, yearLimit);
     let updateChannelDemographics = youtubeAnalyticsDemographics(currentYear, yearLimit);
     let updatedVideoAnalyticsDate = youtubeAnalyticsVideo(currentYear, yearLimit);
-    console.log(updateChannelDemographics);//////////////////////////////////
-    console.log(updatedVideoAnalyticsDate);//////////////////////////////////
     // Determine change-of-the-year
-    let newYear = (
-      updatedChannelAnalyticsDate.latest.getFullYear() > currentYear
+    let changeOfYear = (
+      updatedChannelAnalyticsDate.latestDateReturned.getFullYear() > currentYear
       && updateChannelDemographics >= `${currentYear}-12`
-      && formattedDateAnalytics_(updatedVideoAnalyticsDate).slice(-5) == '12-31'
+      && updatedVideoAnalyticsDate.latestDateReturned.getFullYear() > currentYear
     );
-    console.log(newYear);///////////////////
-    // if newYear == true
-    // create new spreadsheet in the designatd google drive folder, get URL, record the URL to spreadsheet list
-    // update scriptProperties.currentYear and .currentSpreadsheetId
-  } catch (error) {
-    if (!muteUiAlert) {
-      ui.alert(errorMessage_(error));
+    if (changeOfYear) {
+      let config = getConfig_();
+      let spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
+      let options = {
+        createNewFile: true,
+        driveFolderId: scriptProperties.driveFolderId,
+        templateFileId: YOUTUBE_NEW_SPREADSHEET_ID,
+        newFileName: 'YouTube Analytics',
+        newFileNamePrefix: config.SPREADSHEET_NAME_PREFIX
+      };
+      // Create an array of new year(s)
+      let year = currentYear + 1;
+      let now = new Date();
+      while (year <= now.getFullYear()) {
+        options['newFileNameSuffix'] = ` ${year}`;
+        // Check for existing spreadsheet(s) and create a new one if there are no matches.
+        let newFileUrl = spreadsheetUrl_(spreadsheetListName, year, 'YouTube', options); // spreadsheetUrl_() is defined on index.js
+        youtubeAnalyticsChannel(year, yearLimit);
+        youtubeAnalyticsDemographics(year, yearLimit);
+        youtubeAnalyticsVideo(year, yearLimit);
+        // Update script property
+        PropertiesService.getScriptProperties().setProperty('currentYear', year);
+        if (newFileUrl.created) {
+          if (!muteUiAlert) {
+            ui.alert(`New YouTube spreadsheet created for ${year}:\n${newFileUrl.url}`);
+          }
+          if (!muteMailNotification) {
+            let subject = `[SNS Report] New YouTube Spreadsheet Created for ${year}`;
+            let body = `New spreadsheet created to record YouTube analytics data for year ${year} at:\n${newFileUrl.url}\n\n`
+              + mailTemplate;
+            MailApp.sendEmail(myEmail, subject, body);
+          }
+        }
+        // Update year for loop process
+        year += 1;
+      }
     }
+  } catch (error) {
+    let message = errorMessage_(error);
+    if (!muteUiAlert) {
+      ui.alert(message);
+    }
+    if (!muteMailNotification) {
+      let subject = '[SNS Report] Error Detected';
+      let body = `${message}\n\n`
+        + mailTemplate;
+      MailApp.sendEmail(myEmail, subject, body);
+    }
+    throw new Error(message);
   }
 
 }
@@ -508,7 +555,8 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     // Check the date of the latest analytics data and define startDate for youtubeAnalyticsReportsQuery_()
     // If the value returned for getLatestDate_() is null, i.e., there are no previous dates recorded in targetSheet,
     // latestDate will be Dec 31 of the previous year of targetYear
-    let latestDate = (getLatestDate_(targetSheet, 1) ? getLatestDate_(targetSheet, 1) : new Date(targetYear - 1, 11, 31)); // Assuming that the date is recorded on column A of the targetSheet.
+    let currentLatestOnSpreadsheet = getLatestDate_(targetSheet, 1); // Assuming that the date is recorded on column A of the targetSheet.
+    let latestDate = (currentLatestOnSpreadsheet ? new Date(currentLatestOnSpreadsheet.getTime()) : new Date(targetYear - 1, 11, 31));
     startDateObj = new Date(latestDate.setDate(latestDate.getDate() + 1));
     // Setting parameters for youtubeAnalyticsReportsQuery_()
     let startDate = formattedDateAnalytics_(startDateObj);
@@ -521,34 +569,32 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     };
     // Get analytics data
     let reports = JSON.parse(youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids, options));
-    let data = reports.rows.slice();
-    let currentLatestOnSpreadsheet = getLatestDate_(targetSheet, 1);
+    // Get day-by-day count of published videos per channel
+    let myVideosCountByPubDate = youtubeMyVideoCountByPubDate_();
+    // Process data for later analysis
+    let data = reports.rows.reduce((acc, row) => {
+      // Assuming that the DAY and CHANNEL ID fields come in the 1st and 2nd column of 'row', respectively
+      if ((yearLimit && row[0] <= `${targetYear}-12-31`) || !yearLimit) {
+        let publishedVideoCount = (myVideosCountByPubDate[row[1]][row[0]] ? myVideosCountByPubDate[row[1]][row[0]] : 0);
+        let yearMonth = row[0].slice(0, 7);
+        let concatRow = row.concat([publishedVideoCount, yearMonth]);
+        acc.channelData.push(concatRow);
+      }
+      if (row[0] > acc.latest) {
+        acc.latest = row[0];
+      }
+      return acc;
+    }, { channelData: [], latest: `${targetYear}-01-01` });
     let updatedLatestDateObj = {
       latestDateOnSpreadsheet: currentLatestOnSpreadsheet,
       latestDateReturned: currentLatestOnSpreadsheet
     };
     if (data && data.length > 0) {
-      // Get day-by-day count of published videos per channel
-      let myVideosCountByPubDate = youtubeMyVideoCountByPubDate_();
-      // Process data for later analysis
-      let dataMod = data.reduce((acc, row) => {
-        // Assuming that the DAY and CHANNEL ID fields come in the 1st and 2nd column of 'row', respectively
-        if ((yearLimit && row[0] <= `${targetYear}-12-31`) || !yearLimit) {
-          let publishedVideoCount = (myVideosCountByPubDate[row[1]][row[0]] ? myVideosCountByPubDate[row[1]][row[0]] : 0);
-          let yearMonth = row[0].slice(0, 7);
-          let concatRow = row.concat([publishedVideoCount, yearMonth]);
-          acc.data.push(concatRow);
-        }
-        if (row[0] > acc.latest) {
-          acc.latest = row[0];
-        }
-        return acc;
-      }, { data: [], latest: `${targetYear}-01-01` });
       // Copy on spreadsheet
-      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, dataMod.data.length, dataMod.data[0].length).setValues(dataMod.data);
+      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, data.channelData.length, data.channelData[0].length).setValues(data.channelData);
       // Get latest updated date
       updatedLatestDateObj.latestDateOnSpreadsheet = getLatestDate_(targetSheet, 1);
-      updatedLatestDateObj.latestDateReturned = yMd2Date_(dataMod.latest);
+      updatedLatestDateObj.latestDateReturned = yMd2Date_(data.latest);
       // Log
       enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube channel analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)}.`, now);
     } else {
@@ -631,8 +677,7 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
     while (latestMonthDate.getTime() <= currentLatestMonthDate.getTime()) {
       // Define endDate
       endDatePre = new Date(latestMonthDate.setMonth(latestMonthDate.getMonth() + 1));
-      endDate = formattedDateAnalytics_(endDatePre.setDate(endDatePre.getDate() - 1));
-      console.log(`endDate for youtubeAnalyticsDemographics: ${endDate}`);////////////////////////
+      endDate = formattedDateAnalytics_(new Date(endDatePre.setDate(endDatePre.getDate() - 1)));
       // Define thisYearMonth
       thisYearMonth = startDate.slice(0, 7);
       // API query
@@ -655,7 +700,7 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
-    throw new Error(error);
+    throw new Error(message);
   }
 }
 
@@ -678,9 +723,9 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
     // Check the date of the latest analytics data and define startDate for youtubeAnalyticsReportsQuery_()
     // If the value returned for getLatestDate_() is null, i.e., there are no previous dates recorded in targetSheet,
     // latestDate will be Dec 31 of the previous year of targetYear
-    let latestDate = (getLatestDate_(targetSheet, 1) ? getLatestDate_(targetSheet, 1) : new Date(targetYear - 1, 11, 31)); // Assuming that the date is recorded on column A of the targetSheet.
+    let currentLatestOnSpreadsheet = getLatestDate_(targetSheet, 1); // Assuming that the date is recorded on column A of the targetSheet.
+    let latestDate = (currentLatestOnSpreadsheet ? new Date(currentLatestOnSpreadsheet.getTime()) : new Date(targetYear - 1, 11, 31));
     let startDateObj = new Date(latestDate.setDate(latestDate.getDate() + 1));
-
     // Setting parameters for youtubeAnalyticsReportsQuery_()
     let startDate = formattedDateAnalytics_(startDateObj);
     let endDateObj = new Date(now.getTime());
@@ -704,44 +749,33 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
         if (yearLimit && dayVideo[0] <= `${targetYear}-12-31` || !yearLimit) {
           // Assuming that the first column is the 'day' column, insert channel ID and video ID to the day-by-day data array
           dayVideo.splice(1, 0, channelId, videoId);
-          accAnalytics.dailyVideoAnalytics.push(dayVideo);
+          let concatDayVideo = dayVideo.concat([yearMonth]);
+          accAnalytics.dailyVideoAnalytics.push(concatDayVideo);
         }
-        ////// update accAnalytics.latest
+        if (dayVideo[0] > accAnalytics.latest) {
+          accAnalytics.latest = dayVideo[0];
+        }
         return accAnalytics;
-      }, {dailyVideoAnalytics: [], latest: `${targetYear}-01-01`});
-      //////////
-      accData.videoData = accData.videoData.concat(analytics.data);
+      }, { dailyVideoAnalytics: [], latest: `${targetYear}-01-01` });
+      let acc = accData.videoData.slice();
+      accData.videoData = acc.concat(analytics.dailyVideoAnalytics);
+      if (analytics.latest > accData.latest) {
+        accData.latest = analytics.latest;
+      }
       return accData;
     }, { videoData: [], latest: `${targetYear}-01-01` });
-    /*
-    let data = [];
-    for (let i = 0; i < videoList.length; i++) {
-      let video = videoList[i];
-      let videoId = video.id.videoId;
-      let channelId = video.snippet.channelId;
-      options.filters = `video==${videoId}`;
-      let rawAnalytics = JSON.parse(youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids, options)).rows;
-      for (let j = 0; j < rawAnalytics.length; j++) {
-        let dayVideo = rawAnalytics[j];
-        // Assuming that the first column is the 'day' column, insert channel ID and video ID to the day-by-day data array
-        dayVideo.splice(1, 0, channelId, videoId);
-        data.push(dayVideo);
-      }
-    }
-    */
-    // Copy on spreadsheet
-    let updatedLatestDateObj = getLatestDate_(targetSheet, 1);
-    if (data && data.length > 0) {
-      let dataMod = data.map(function (row) {///////////////////
-        let yearMonth = row[0].slice(0, 7);
-        let concatRow = row.concat([yearMonth]);
-        return concatRow;
-      });
-      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, dataMod.length, dataMod[0].length).setValues(dataMod);
+    let updatedLatestDateObj = {
+      latestDateOnSpreadsheet: currentLatestOnSpreadsheet,
+      latestDateReturned: currentLatestOnSpreadsheet
+    };
+    if (data.videoData && data.videoData.length > 0) {
+      // Copy on spreadsheet
+      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, data.videoData.length, data.videoData[0].length).setValues(data.videoData);
       // Get latest updated date
-      updatedLatestDateObj = getLatestDate_(targetSheet, 1);
+      updatedLatestDateObj.latestDateOnSpreadsheet = getLatestDate_(targetSheet, 1);
+      updatedLatestDateObj.latestDateReturned = yMd2Date_(data.latest);
       // Log
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube video analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj)}.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube video analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)}.`, now);
     } else {
       enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: no updates for YouTube video analytics.`, now);
     }
@@ -1285,19 +1319,6 @@ function yearMonth2Date_(yearMonth) {
 function formattedDateAnalytics_(date, timeZone = Session.getScriptTimeZone()) {
   var dateString = Utilities.formatDate(date, timeZone, 'yyyy-MM-dd');
   return dateString;
-}
-
-/**
- * Enter log on designated spreadsheet.
- * @param {string} spreadsheetId ID of spreadsheet to enter log.
- * @param {string} sheetName Name of log sheet.
- * @param {string} logMessage Log message
- * @param {Date} timestamp [Optional] Date object for timestamp. If omitted, enters the time of execution.
- */
-function enterLog_(spreadsheetId, sheetName, logMessage, timestamp = new Date()) {
-  var targetSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
-  var timestampString = formattedDate_(timestamp, targetSpreadsheet.getSpreadsheetTimeZone());
-  targetSpreadsheet.getSheetByName(sheetName).appendRow([timestampString, logMessage]);
 }
 
 /**
