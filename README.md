@@ -6,6 +6,8 @@ Get channel & video report data using YouTube Data API and Analytics API. The sc
 FYI: 
 [Google App Scripts (Sheets) not connecting YouTube brand account](https://stackoverflow.com/questions/48999539/google-app-scripts-sheets-not-connecting-youtube-brand-account)
 
+### memo
+- enable APIs on Google Cloud Platform: Google Drive API, YouTube Data API, and YouTube Analytics API
 
 ## Facebook
 in development
