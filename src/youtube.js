@@ -589,7 +589,7 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
       latestDateOnSpreadsheet: currentLatestOnSpreadsheet,
       latestDateReturned: currentLatestOnSpreadsheet
     };
-    if (data && data.length > 0) {
+    if (data.channelData && data.channelData.length > 0) {
       // Copy on spreadsheet
       targetSheet.getRange(targetSheet.getLastRow() + 1, 1, data.channelData.length, data.channelData[0].length).setValues(data.channelData);
       // Get latest updated date

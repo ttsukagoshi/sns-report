@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 /**
- * 
+ * Periodically update analytics data using Google Apps Script's trigger.
  */
 function weeklyAnalyticsUpdate() {
   var muteUiAlert = true;
