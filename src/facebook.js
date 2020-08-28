@@ -20,7 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-var FB_API_VERSION = 'v8.0'; // Facebook Graph API version to be used
+
+// Facebook Graph API version to be used
+const FB_API_VERSION = 'v8.0';
+// Spreadsheet ID to use as template for creating a new spreadsheet to enter YouTube analytics data
+const FB_NEW_SPREADSHEET_ID = '';
 // Other global variables are defined on index.js
 
 ///////////////////
@@ -117,11 +121,61 @@ function authCallbackFacebookAPI_(request) {
 // Page Analytics //
 ////////////////////
 
-function getPageAccessTokens_() {
+/**
+ * GET request using Facebook Graph API.
+ * https://developers.facebook.com/docs/graph-api/using-graph-api
+ * @param {string} node Individual objects in the Facebook Graph API, e.g., User, Photo, Page, or Comment
+ * @param {string} edge [Optional] Connections between a collection of objects and a single object,
+ * such as Photos (edge) on a Page (node) or Comments (edge) on a Photo (node).
+ * @param {array} fields [Optional] Data about an object, such as the name and id of a Page
+ */
+function getFbGraphData(node, edge = '', fields = []) {
+  var facebookAPIService = getFacebookAPIService_();
   try {
-    let userId = JSON.parse(getFbGraphData('me')).id;
-    let node = `${userId}/accounts`;
-    let pages = JSON.parse(getFbGraphData(node));
+    if (!facebookAPIService.hasAccess()) {
+      throw new Error('Unauthorized. Get authorized by Menu > Facebook > Authorize');
+    }
+    let baseUrl = `https://graph.facebook.com/${FB_API_VERSION}/${node}`;
+    if (edge) {
+      baseUrl += `/${edge}`;
+    }
+    let fieldsUrl = (fields.length ? `&fields=${encodeURIComponent(fields.join())}` : '');
+    let url = `${baseUrl}?access_token=${facebookAPIService.getAccessToken()}${fieldsUrl}`;
+    let response = UrlFetchApp.fetch(url, {
+      method: 'GET',
+      contentType: 'application/json; charset=UTF-8'
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Retrieve basic information and page access tokens for the page that the authorized user has access to.
+ * @returns {array} Array of objects containing page data
+ */
+function getFbPages_() {
+  var node = 'me';
+  var edge = 'accounts';
+  var fields = [
+    'name',
+    'link',
+    'about',
+    'description',
+    'category',
+    'category_list',
+    'emails',
+    'website',
+    'cover',
+    'checkins',
+    'country_page_likes',
+    'fan_count',
+    'access_token',
+    'tasks'
+  ];
+  try {
+    let pages = JSON.parse(getFbGraphData(node, edge, fields));
     let pagesData = pages.data.slice();
     let nextUrl = pages.paging.next || null;
     while (nextUrl) {
@@ -139,33 +193,106 @@ function getPageAccessTokens_() {
 }
 
 /**
- * GET request using Facebook Graph API.
- * https://developers.facebook.com/docs/graph-api/using-graph-api
- * @param {string} node Individual objects in the Facebook Graph API, e.g., User, Photo, Page, or Comment
- * @param {Object} edges [Optional] Parameters for the request in form of a Javascript object.//////////////////////////
+ * List the authorized user's page(s) on the summary spreadsheet
+ * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
+ * @returns {array} 2d array containing the page data
  */
-function getFbGraphData(node, edges = {}) {
-  var facebookAPIService = getFacebookAPIService_();
+function updateFbSummaryPageList(muteUiAlert = false) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var timeZone = ss.getSpreadsheetTimeZone();
+  var ui = SpreadsheetApp.getUi();
+  var scriptProperties = PropertiesService.getScriptProperties().getProperties();
+  var config = getConfig_();
+  var fbCurrentYear = parseInt(scriptProperties.fbCurrentYear);
+  var now = new Date();
+  // Getting the target spreadsheet
+  var spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
+  var options = {
+    createNewFile: true,
+    driveFolderId: scriptProperties.driveFolderId,
+    templateFileId: FB_NEW_SPREADSHEET_ID,
+    newFileName: 'Facebook Insights',
+    newFileNamePrefix: config.SPREADSHEET_NAME_PREFIX
+  };
+  var spreadsheetUrl = spreadsheetUrl_(spreadsheetListName, fbCurrentYear, 'Facebook', options).url;
   try {
-    if (!facebookAPIService.hasAccess()) {
-      throw new Error('Unauthorized. Get authorized by Menu > Facebook > Authorize');
+    // Get list of page(s)
+    let pageListFull = getFbPages_();
+    // Extract data for copying into spreadsheet
+    let pageList = pageListFull.map((element, index) => {
+      let num = index + 1;
+      let coverUrl = element.cover.source;
+      let coverUrlFunction = `=image("${coverUrl}")`; // For using the image function on spreadsheet
+      let id = element.id;
+      let pageUrl = element.link;
+      let name = element.name;
+      let about = element.about;
+      let description = element.description;
+      let category = element.category;
+      let category_all = element.category_list.reduce((acc, val) => {
+        acc.push(val.name);
+        return acc;
+      }, []).join();
+      let emails = element.emails.join();
+      let website = element.website;
+      let checkins = element.checkins;
+      let country_page_likes = element.country_page_likes;
+      let fan_count = element.fan_count;
+      let timestamp = formattedDate_(now, timeZone);
+      return [
+        timestamp,
+        num,
+        coverUrlFunction,
+        coverUrl,
+        id,
+        pageUrl,
+        name,
+        about,
+        description,
+        category,
+        category_all,
+        emails,
+        website,
+        checkins,
+        country_page_likes,
+        fan_count
+      ];
     }
-    let baseUrl = `https://graph.facebook.com/${FB_API_VERSION}/${node}`;
-    let paramString = '';
-    for (let k in edges) {
-      let param = `${k}=${encodeURIComponent(parameters[k])}`;
-      if (paramString.slice(-1) !== '?') {
-        param = '&' + param;
-      }
-      paramString += param;
+    );
+
+    // Set the text values into spreadsheets (summary and individual)
+    //// Renew channel list of summary spreadsheet
+    let myPagesSheet = ss.getSheetByName(config.SHEET_NAME_MY_PAGES);
+    if (myPagesSheet.getLastRow() > 1) {
+      myPagesSheet.getRange(2, 1, myPagesSheet.getLastRow() - 1, myPagesSheet.getLastColumn())
+        .deleteCells(SpreadsheetApp.Dimension.ROWS);
     }
-    let url = `${baseUrl}?access_token=${facebookAPIService.getAccessToken()}${paramString}`;
-    let response = UrlFetchApp.fetch(url, {
-      method: 'GET',
-      contentType: 'application/json; charset=UTF-8'
-    });
-    return response;
+    myPagesSheet.getRange(2, 1, pageList.length, pageList[0].length) // Assuming that table body to which the list is copied starts from the 2nd row of column 1 ('A' column).
+      .setValues(pageList);
+    //// Add row(s) to current spreadsheet of this year
+    let currentSheet = SpreadsheetApp.openByUrl(spreadsheetUrl).getSheetByName(config.SHEET_NAME_MY_PAGES);
+    currentSheet.getRange(currentSheet.getLastRow() + 1, 1, pageList.length, pageList[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
+      .setValues(pageList);
+    // Log & Notify
+    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, 'Success: updated page list.', now);
+    if (!muteUiAlert) {
+      ui.alert('Completed', 'Updated summary page list.', ui.ButtonSet.OK);
+    }
+    return pageList;
   } catch (error) {
-    throw error;
+    let message = errorMessage_(error);
+    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, message, now);
+    if (!muteUiAlert) {
+      ui.alert('Error', message, ui.ButtonSet.OK);
+    }
+    return null;
   }
+}
+
+/**
+ * Update all summary list for Facebook.
+ */
+function updateAllFbList() {
+  updateFbSummaryPageList();
+  ///////////////////////////////////////////
 }
