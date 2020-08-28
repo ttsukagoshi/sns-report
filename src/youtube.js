@@ -163,8 +163,10 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     // Set the text values into spreadsheets (summary and individual)
     //// Renew channel list of summary spreadsheet
     let myChannelsSheet = ss.getSheetByName(config.SHEET_NAME_MY_CHANNELS);
-    myChannelsSheet.getRange(2, 1, myChannelsSheet.getLastRow() - 1, myChannelsSheet.getLastColumn())
-      .deleteCells(SpreadsheetApp.Dimension.ROWS);
+    if (myChannelsSheet.getLastRow() > 1) {
+      myChannelsSheet.getRange(2, 1, myChannelsSheet.getLastRow() - 1, myChannelsSheet.getLastColumn())
+        .deleteCells(SpreadsheetApp.Dimension.ROWS);
+    }
     myChannelsSheet.getRange(2, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from the 2nd row of column 1 ('A' column).
       .setValues(channelList);
     //// Add row(s) to current spreadsheet of this year
@@ -251,8 +253,10 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
     // Set the text values into spreadsheets (summary and individual)
     //// Renew channel list of summary spreadsheet
     let myVideosSheet = ss.getSheetByName(config.SHEET_NAME_MY_VIDEOS);
-    myVideosSheet.getRange(2, 1, myVideosSheet.getLastRow() - 1, myVideosSheet.getLastColumn())
-      .deleteCells(SpreadsheetApp.Dimension.ROWS);
+    if (myVideosSheet.getLastRow() > 1) {
+      myVideosSheet.getRange(2, 1, myVideosSheet.getLastRow() - 1, myVideosSheet.getLastColumn())
+        .deleteCells(SpreadsheetApp.Dimension.ROWS);
+    }
     myVideosSheet.getRange(2, 1, videoList.length, videoList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
       .setValues(videoList);
     //// Add row(s) to current spreadsheet of this year
@@ -470,16 +474,16 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
   var yearLimit = true;
   try {
-    let currentYear = parseInt(scriptProperties.currentYear);
+    let ytCurrentYear = parseInt(scriptProperties.ytCurrentYear);
     // Get latest data
-    let updatedChannelAnalyticsDate = youtubeAnalyticsChannel(currentYear, yearLimit);
-    let updateChannelDemographics = youtubeAnalyticsDemographics(currentYear, yearLimit);
-    let updatedVideoAnalyticsDate = youtubeAnalyticsVideo(currentYear, yearLimit);
+    let updatedChannelAnalyticsDate = youtubeAnalyticsChannel(ytCurrentYear, yearLimit);
+    let updateChannelDemographics = youtubeAnalyticsDemographics(ytCurrentYear, yearLimit);
+    let updatedVideoAnalyticsDate = youtubeAnalyticsVideo(ytCurrentYear, yearLimit);
     // Determine change-of-the-year
     let changeOfYear = (
-      updatedChannelAnalyticsDate.latestDateReturned.getFullYear() > currentYear
-      && updateChannelDemographics >= `${currentYear}-12`
-      && updatedVideoAnalyticsDate.latestDateReturned.getFullYear() > currentYear
+      updatedChannelAnalyticsDate.latestDateReturned.getFullYear() > ytCurrentYear
+      && updateChannelDemographics >= `${ytCurrentYear}-12`
+      && updatedVideoAnalyticsDate.latestDateReturned.getFullYear() > ytCurrentYear
     );
     if (changeOfYear) {
       let config = getConfig_();
@@ -492,7 +496,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
         newFileNamePrefix: config.SPREADSHEET_NAME_PREFIX
       };
       // Create an array of new year(s)
-      let year = currentYear + 1;
+      let year = ytCurrentYear + 1;
       let now = new Date();
       while (year <= now.getFullYear()) {
         options['newFileNameSuffix'] = ` ${year}`;
@@ -502,7 +506,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
         youtubeAnalyticsDemographics(year, yearLimit);
         youtubeAnalyticsVideo(year, yearLimit);
         // Update script property
-        PropertiesService.getScriptProperties().setProperty('currentYear', year);
+        PropertiesService.getScriptProperties().setProperty('ytCurrentYear', year);
         if (newFileUrl.created) {
           if (!muteUiAlert) {
             ui.alert(`New YouTube spreadsheet created for ${year}:\n${newFileUrl.url}`);
@@ -1001,18 +1005,18 @@ function createYouTubeAnalyticsSummary() {
       } else {
         // Assuming that the first column of the channel analytics data table is the date
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-        let currentYear = (thisDate.getTime() >= reportPeriodStart.getTime() ? 'CURRENT' : 'PREVIOUS');
+        let ytCurrentYear = (thisDate.getTime() >= reportPeriodStart.getTime() ? 'CURRENT' : 'PREVIOUS');
         // convert previous year's year-month into current year's corresponding months for aggregation
         // assuming column index 12 is YEAR-MONTH
         let yearMonthAggPre = Utilities.formatDate(element[12], ssTimeZone, 'yyyy-MM');
         let yearMonthAgg = (
-          currentYear == 'PREVIOUS'
+          ytCurrentYear == 'PREVIOUS'
             ? `${parseInt(yearMonthAggPre.slice(0, 4)) + 1}-${yearMonthAggPre.slice(-2)}`
             : yearMonthAggPre);
         let dislikesInv = -parseInt(element[4]); // Invert postive counts of dislikes to negative for better visualization
         let subscribersTotal = parseInt(element[5]) - parseInt(element[6]); // [SUBSCRIBERS GAINED] - [SUBSCRIBERS LOST]
         // Add column(s) to the original data
-        let concatElement = element.concat([currentYear, yearMonthAgg, dislikesInv, subscribersTotal]);
+        let concatElement = element.concat([ytCurrentYear, yearMonthAgg, dislikesInv, subscribersTotal]);
         return concatElement;
       }
     });

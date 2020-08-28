@@ -38,11 +38,6 @@ const LOG_SHEET_NAME = '99_Log';
  */
 function onOpen() {
   let ui = SpreadsheetApp.getUi();
-  ui.createMenu('Facebook')
-    .addItem('Authorize', 'showSidebarFacebookApi')
-    .addItem('Logout/Reset', 'logoutFacebook')
-    .addSeparator()
-    .addToUi();
   ui.createMenu('YouTube')
     .addItem('Authorize', 'showSidebarYouTubeApi')
     .addItem('Logout/Reset', 'logoutYouTube')
@@ -60,6 +55,17 @@ function onOpen() {
     )
     .addSeparator()
     .addItem('Create Analytics Summary', 'createYouTubeAnalyticsSummary')
+    .addToUi();
+  ui.createMenu('Facebook')
+    .addItem('Authorize', 'showSidebarFacebookApi')
+    .addItem('Logout/Reset', 'logoutFacebook')
+    .addSeparator()
+    .addSubMenu(
+      ui.createMenu('Update Page List')
+        .addItem('Update All', 'updateAllFbList')
+        .addSeparator()
+        .addItem('Update Page List', 'updateFbSummaryPageList')
+    )
     .addToUi();
   ui.createMenu('Settings')
     .addItem('Setup', 'initialSettings')
@@ -166,7 +172,7 @@ function spreadsheetUrl_(spreadsheetListName, targetYear, platform, options = {}
   var targetSpreadsheet = spreadsheetList.filter(value => (value.YEAR == targetYear && value.PLATFORM == platform));
   try {
     if (targetSpreadsheet.length) {
-      return {'url': targetSpreadsheet[0].URL, 'created': false};
+      return { 'url': targetSpreadsheet[0].URL, 'created': false };
     } else if (options.createNewFile && options.templateFileId) {
       let targetFolder = (options.driveFolderId ? DriveApp.getFolderById(options.driveFolderId) : DriveApp.getRootFolder());
       let templateFile = DriveApp.getFileById(options.templateFileId);
@@ -180,12 +186,12 @@ function spreadsheetUrl_(spreadsheetListName, targetYear, platform, options = {}
       SpreadsheetApp.getActiveSpreadsheet().getSheetByName(spreadsheetListName).appendRow(newRow);
       // Add log to the new file
       enterLog_(SpreadsheetApp.openByUrl(newFileUrl).getId(), LOG_SHEET_NAME, 'Spreadsheet created.');
-      return {'url': newFileUrl, 'created': true};
+      return { 'url': newFileUrl, 'created': true };
     } else if (options.createNewFile && !options.templateFileId) {
       throw new Error('The key "templateFileId" is missing in "options".');
     } else {
-      return {'url': null, 'created': false};
-    } 
+      return { 'url': null, 'created': false };
+    }
   } catch (error) {
     let message = errorMessage_(error);
     throw new Error(message);

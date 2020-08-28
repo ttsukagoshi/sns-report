@@ -26,7 +26,7 @@
 function initialSettings() {
   var ui = SpreadsheetApp.getUi();
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
-  if (!scriptProperties.setupComplete || toBoolean_(scriptProperties.setupComplete) == false) {
+  if (!scriptProperties.setupComplete || !toBoolean_(scriptProperties.setupComplete)) {
     setup_(ui);
   } else {
     let alreadySetup = 'Initial settings are already complete. Do you want to overwrite the settings?\n\n';
@@ -85,7 +85,7 @@ function setup_(ui, currentSettings = {}) {
     if (responseYtClientSecret.getSelectedButton() !== ui.Button.OK) {
       throw new Error('Canceled.');
     }
-    var ytClientSecret = responseYtClientSecret.getResponseText();
+    let ytClientSecret = responseYtClientSecret.getResponseText();
     // Facebook App ID
     let promptFbAppId = 'Facebook App ID: ID of Facebook App to process request. See https://developers.facebook.com/docs/facebook-login/access-tokens/';
     promptFbAppId += (currentSettings.fbAppId ? `\n\nCurrent Value: ${currentSettings.fbAppId}` : '');
@@ -93,7 +93,15 @@ function setup_(ui, currentSettings = {}) {
     if (responseFbAppId.getSelectedButton() !== ui.Button.OK) {
       throw new Error('Canceled.');
     }
-    var fbAppId = responseFbAppId.getResponseText();
+    let fbAppId = responseFbAppId.getResponseText();
+    // Facebook App ID
+    let promptFbAppSecret = 'Facebook App Secret: Facebook App Secret to process request. See https://developers.facebook.com/docs/facebook-login/access-tokens/';
+    promptFbAppSecret += (currentSettings.fbAppSecret ? `\n\nCurrent Value: ${currentSettings.fbAppSecret}` : '');
+    let responseFbAppSecret = ui.prompt(promptFbAppSecret, ui.ButtonSet.OK_CANCEL);
+    if (responseFbAppSecret.getSelectedButton() !== ui.Button.OK) {
+      throw new Error('Canceled.');
+    }
+    let fbAppSecret = responseFbAppId.getResponseText();
     // Drive Folder ID
     let promptDriveFolderId = 'Drive Folder ID: The workspace Google Drive folder ID that all analytics spreadsheets are to be stored in.';
     promptDriveFolderId += (currentSettings.driveFolderId ? `\n\nCurrent Value: ${currentSettings.driveFolderId}` : '');
@@ -102,14 +110,22 @@ function setup_(ui, currentSettings = {}) {
       throw new Error('Canceled.');
     }
     let driveFolderId = responseDriveFolderId.getResponseText();
-    // Current Year
-    let promptCurrentYear = 'Current Year: Current year in "yyyy" format.';
-    promptCurrentYear += (currentSettings.currentYear ? `\n\nCurrent Value: ${currentSettings.currentYear}` : '');
-    let responseCurrentYear = ui.prompt(promptCurrentYear, ui.ButtonSet.OK_CANCEL);
-    if (responseCurrentYear.getSelectedButton() !== ui.Button.OK) {
+    // Current Year (YouTube)
+    let promptYtCurrentYear = 'Current Year (YouTube): Current year for YouTube data in "yyyy" format.';
+    promptYtCurrentYear += (currentSettings.ytCurrentYear ? `\n\nCurrent Value: ${currentSettings.ytCurrentYear}` : '');
+    let responseYtCurrentYear = ui.prompt(promptYtCurrentYear, ui.ButtonSet.OK_CANCEL);
+    if (responseYtCurrentYear.getSelectedButton() !== ui.Button.OK) {
       throw new Error('Canceled.');
     }
-    let currentYear = responseCurrentYear.getResponseText();
+    let ytCurrentYear = responseYtCurrentYear.getResponseText();
+    // Current Year (Facebook)
+    let promptFbCurrentYear = 'Current Year (Facebook): Current year for Facebook data in "yyyy" format.';
+    promptFbCurrentYear += (currentSettings.fbCurrentYear ? `\n\nCurrent Value: ${currentSettings.fbCurrentYear}` : '');
+    let responseFbCurrentYear = ui.prompt(promptFbCurrentYear, ui.ButtonSet.OK_CANCEL);
+    if (responseFbCurrentYear.getSelectedButton() !== ui.Button.OK) {
+      throw new Error('Canceled.');
+    }
+    let fbCurrentYear = responseFbCurrentYear.getResponseText();
     // Current Spreadsheet ID
     let promptCurrentSpreadsheetId = 'Current Spreadsheet ID: Spreadsheet ID to record the analytics data in. This should be newly created (automatically) at the beginning of each year to avoid hitting the spreadsheet capacity limit.';
     promptCurrentSpreadsheetId += (currentSettings.currentSpreadsheetId ? `\n\nCurrent Value: ${currentSettings.currentSpreadsheetId}` : '');
@@ -123,8 +139,10 @@ function setup_(ui, currentSettings = {}) {
       'ytClientId': ytClientId,
       'ytClientSecret': ytClientSecret,
       'fbAppId': fbAppId,
+      'fbAppSecret': fbAppSecret,
       'driveFolderId': driveFolderId,
-      'currentYear': currentYear,
+      'ytCurrentYear': ytCurrentYear,
+      'fbCurrentYear': fbCurrentYear,
       'currentSpreadsheetId': currentSpreadsheetId,
       'setupComplete': true
     };
