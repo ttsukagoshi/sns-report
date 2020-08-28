@@ -26,7 +26,7 @@
 function initialSettings() {
   var ui = SpreadsheetApp.getUi();
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
-  if (!scriptProperties.setupComplete || toBoolean_(scriptProperties.setupComplete) == false) {
+  if (!scriptProperties.setupComplete || !toBoolean_(scriptProperties.setupComplete)) {
     setup_(ui);
   } else {
     let alreadySetup = 'Initial settings are already complete. Do you want to overwrite the settings?\n\n';
