@@ -461,11 +461,10 @@ function youtubeData_(resourceType, parameters) {
 
 /**
  * Get latest analytics data for YouTube channel and videos that the authorized user owns.
- * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
+ * @param {boolean} muteUiAlert [Optional] Mute SpreadsheetApp.getUi().alert() when true; defaults to false.
  * @param {boolean} muteMailNotification [Optional] Mute email notification when true; defaults to true.
  */
 function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = true) {
-  var ui = SpreadsheetApp.getUi();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var myEmail = Session.getActiveUser().getEmail();
   var mailTemplate =
@@ -509,7 +508,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
         PropertiesService.getScriptProperties().setProperty('ytCurrentYear', year);
         if (newFileUrl.created) {
           if (!muteUiAlert) {
-            ui.alert(`New YouTube spreadsheet created for ${year}:\n${newFileUrl.url}`);
+            SpreadsheetApp.getUi().alert(`New YouTube spreadsheet created for ${year}:\n${newFileUrl.url}`);
           }
           if (!muteMailNotification) {
             let subject = `[SNS Report] New YouTube Spreadsheet Created for ${year}`;
@@ -525,7 +524,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
   } catch (error) {
     let message = errorMessage_(error);
     if (!muteUiAlert) {
-      ui.alert(message);
+      SpreadsheetApp.getUi().alert(message);
     }
     if (!muteMailNotification) {
       let subject = '[SNS Report] Error Detected';
