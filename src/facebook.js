@@ -24,7 +24,7 @@
 // Facebook Graph API version to be used
 const FB_API_VERSION = 'v8.0';
 // Spreadsheet ID to use as template for creating a new spreadsheet to enter YouTube analytics data
-const FB_NEW_SPREADSHEET_ID = '';
+const FB_NEW_SPREADSHEET_ID = '';///////////////////////////////////
 // Other global variables are defined on index.js
 
 ///////////////////
@@ -259,7 +259,69 @@ function updateFbSummaryPageList(muteUiAlert = false) {
       ];
     }
     );
+    // Set the text values into spreadsheets (summary and individual)
+    //// Renew channel list of summary spreadsheet
+    let myPagesSheet = ss.getSheetByName(config.SHEET_NAME_MY_PAGES);
+    if (myPagesSheet.getLastRow() > 1) {
+      myPagesSheet.getRange(2, 1, myPagesSheet.getLastRow() - 1, myPagesSheet.getLastColumn())
+        .deleteCells(SpreadsheetApp.Dimension.ROWS);
+    }
+    myPagesSheet.getRange(2, 1, pageList.length, pageList[0].length) // Assuming that table body to which the list is copied starts from the 2nd row of column 1 ('A' column).
+      .setValues(pageList);
+    //// Add row(s) to current spreadsheet of this year
+    let currentSheet = SpreadsheetApp.openByUrl(spreadsheetUrl).getSheetByName(config.SHEET_NAME_MY_PAGES);
+    currentSheet.getRange(currentSheet.getLastRow() + 1, 1, pageList.length, pageList[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
+      .setValues(pageList);
+    // Log & Notify
+    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, 'Success: updated page list.', now);
+    if (!muteUiAlert) {
+      ui.alert('Completed', 'Updated summary page list.', ui.ButtonSet.OK);
+    }
+    return pageList;
+  } catch (error) {
+    let message = errorMessage_(error);
+    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, message, now);
+    if (!muteUiAlert) {
+      ui.alert('Error', message, ui.ButtonSet.OK);
+    }
+    return null;
+  }
+}
 
+/**
+ * List the authorized user's page(s) posts on the summary & individual year's spreadsheet
+ * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
+ * @returns {array} 2d array containing the page post data
+ */
+
+// posts
+// docs/graph-api/reference/v8.0/page/feed
+// me/feed?fields=id,permalink_url,created_time,backdated_time,place,picture,message,attachments,properties
+function updateFbPagePostList(muteUiAlert = false) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var timeZone = ss.getSpreadsheetTimeZone();
+  var ui = SpreadsheetApp.getUi();
+  var scriptProperties = PropertiesService.getScriptProperties().getProperties();
+  var config = getConfig_();
+  var fbCurrentYear = parseInt(scriptProperties.fbCurrentYear);
+  var now = new Date();
+  // Getting the target spreadsheet
+  var spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
+  var options = {
+    createNewFile: true,
+    driveFolderId: scriptProperties.driveFolderId,
+    templateFileId: FB_NEW_SPREADSHEET_ID,
+    newFileName: 'Facebook Insights',
+    newFileNamePrefix: config.SPREADSHEET_NAME_PREFIX
+  };
+  var spreadsheetUrl = spreadsheetUrl_(spreadsheetListName, fbCurrentYear, 'Facebook', options).url;
+  try {
+    // Get list of page(s)
+    let pageListFull = getFbPages_();
+    // Extract data for copying into spreadsheet
+    let postList = pageListFull.reduce((element, index) => {////////////////////////////////////////
+
+    }, []);
     // Set the text values into spreadsheets (summary and individual)
     //// Renew channel list of summary spreadsheet
     let myPagesSheet = ss.getSheetByName(config.SHEET_NAME_MY_PAGES);
