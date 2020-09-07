@@ -315,13 +315,58 @@ function updateFbPagePostList(muteUiAlert = false) {
     newFileNamePrefix: config.SPREADSHEET_NAME_PREFIX
   };
   var spreadsheetUrl = spreadsheetUrl_(spreadsheetListName, fbCurrentYear, 'Facebook', options).url;
+  // Setting the parameters for getting page posts
+  var postEdge = 'feed';
+  var postFields = [
+    'id',
+    'permalink_url',
+    'created_time',
+    'backdated_time',
+    'place',
+    'picture',
+    'message',
+    'attachments',
+    'properties'
+  ];
   try {
     // Get list of page(s)
     let pageListFull = getFbPages_();
     // Extract data for copying into spreadsheet
-    let postList = pageListFull.reduce((element, index) => {////////////////////////////////////////
-
+    let postList = [];
+    for (let i = 0; i < pageListFull.length; i++) {
+      let pageId = pageListFull[i].id;
+      let posts = JSON.parse(getFbGraphData(pageId, postEdge, postFields));
+      let postsData = posts.data.slice();
+      let nextUrl = posts.paging.next || null;
+      while (nextUrl) {
+        let nextResponse = JSON.parse(UrlFetchApp.fetch(nextUrl, {
+          method: 'GET',
+          contentType: 'application/json; charset=UTF-8'
+        }));
+        postsData = postsData.concat(nextResponse.data);
+        nextUrl = nextResponse.paging.next || null;
+      }
+      postList = postList.concat(postsData);
+    }
+    let postListSS = postList.reduce((accList, post) => {
+      if (checkYear_(post.created_time, fbCurrentYear, 'PST')) { // See index.js for definition of checkYear_()
+        // Create post of the current year based on Pacific Time (daylight saving time taken into account)
+        let postData = [
+          post.id,
+          post.permalink_url,
+          post.created_time,
+          post.place.name,
+          post.place.id,
+          post.picture,
+          `=image("${post.picture}")`,
+          post.message,
+        ];
+        //////////////////////////////////////////////////////
+        accList.push(postData);
+      }
+      return accList;
     }, []);
+    /////////////////////////////////////////////////////////////
     // Set the text values into spreadsheets (summary and individual)
     //// Renew channel list of summary spreadsheet
     let myPagesSheet = ss.getSheetByName(config.SHEET_NAME_MY_PAGES);

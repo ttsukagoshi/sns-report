@@ -138,6 +138,19 @@ function formattedDate_(date, timeZone = Session.getScriptTimeZone()) {
 }
 
 /**
+ * Checks whether the given date belongs to the given year. Timezone can be designated.
+ * @param {string} dateString Date string in ISO8601 format to be checked.
+ * @param {number} checkYear The year to check whether the dateString belongs to.
+ * @param {string} timeZone [Optional] Timezone in which to conduct the check. Defaults to the scripts' timezone.
+ * @returns {boolean} Returns true if the given date belongs to the given year.
+ */
+function checkYear_(dateString, checkYear, timeZone = Session.getScriptTimeZone()) {
+  var dateObj = new Date(dateString);
+  var year = parseInt(formattedDate_(dateObj, timeZone).slice(0, 4));
+  return year == checkYear;
+}
+
+/**
  * Gets the URL of the target spreadsheet from the list of spreadsheet names and their URLs.
  * @param {string} spreadsheetListName Sheet name of the spreadsheet list
  * @param {number} targetYear Year of the spreadsheet
