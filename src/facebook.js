@@ -351,15 +351,24 @@ function updateFbPagePostList(muteUiAlert = false) {
     let postListSS = postList.reduce((accList, post) => {
       if (checkYear_(post.created_time, fbCurrentYear, 'PST')) { // See index.js for definition of checkYear_()
         // Create post of the current year based on Pacific Time (daylight saving time taken into account)
+        let postId = post.id;
+        let postPermalink_url = post.permalink_url;
+        let postCreatedTime = post.created_time;
+        let postPlace = post.place || {'name': 'NA', 'id': 'NA'};
+        let postPlaceName = postPlace.name;
+        let postPlaceId = postPlace.id;
+        let postPictureUrl = post.picture || 'NA';
+        let postPictureImage = (post.picture ? `=image("${post.picture}")` : 'NA');
+        let postMessage = post.message;
         let postData = [
-          post.id,
-          post.permalink_url,
-          post.created_time,
-          post.place.name,
-          post.place.id,
-          post.picture,
-          `=image("${post.picture}")`,
-          post.message,
+          postId,
+          postPermalink_url,
+          postCreatedTime,
+          postPlaceName,
+          postPlaceId,
+          postPictureUrl,
+          postPictureImage,
+          postMessage,
         ];
         //////////////////////////////////////////////////////
         accList.push(postData);
@@ -367,25 +376,16 @@ function updateFbPagePostList(muteUiAlert = false) {
       return accList;
     }, []);
     /////////////////////////////////////////////////////////////
-    // Set the text values into spreadsheets (summary and individual)
-    //// Renew channel list of summary spreadsheet
-    let myPagesSheet = ss.getSheetByName(config.SHEET_NAME_MY_PAGES);
-    if (myPagesSheet.getLastRow() > 1) {
-      myPagesSheet.getRange(2, 1, myPagesSheet.getLastRow() - 1, myPagesSheet.getLastColumn())
-        .deleteCells(SpreadsheetApp.Dimension.ROWS);
-    }
-    myPagesSheet.getRange(2, 1, pageList.length, pageList[0].length) // Assuming that table body to which the list is copied starts from the 2nd row of column 1 ('A' column).
-      .setValues(pageList);
-    //// Add row(s) to current spreadsheet of this year
-    let currentSheet = SpreadsheetApp.openByUrl(spreadsheetUrl).getSheetByName(config.SHEET_NAME_MY_PAGES);
-    currentSheet.getRange(currentSheet.getLastRow() + 1, 1, pageList.length, pageList[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
-      .setValues(pageList);
+    // Set the text values into spreadsheet
+    let currentSheet = SpreadsheetApp.openByUrl(spreadsheetUrl).getSheetByName(config.SHEET_NAME_PAGE_POSTS);
+    currentSheet.getRange(currentSheet.getLastRow() + 1, 1, postListSS.length, postListSS[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
+      .setValues(postListSS);
     // Log & Notify
-    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, 'Success: updated page list.', now);
+    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, 'Success: updated page post list.', now);
     if (!muteUiAlert) {
-      ui.alert('Completed', 'Updated summary page list.', ui.ButtonSet.OK);
+      ui.alert('Completed', 'Updated page post list.', ui.ButtonSet.OK);
     }
-    return pageList;
+    return postListSS;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, message, now);
