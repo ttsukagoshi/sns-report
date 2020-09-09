@@ -1,6 +1,8 @@
 # clasp
 .clasp.json
 appsscript.json
+creds.json
+.clasprc.json
 
 # old/test files
 src/archive/*
