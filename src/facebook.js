@@ -37,15 +37,17 @@ const FB_NEW_SPREADSHEET_ID = '';///////////////////////////////////
  */
 function showSidebarFacebookApi() {
   var facebookAPIService = getFacebookAPIService_();
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale());
   if (!facebookAPIService.hasAccess()) {
     let authorizationUrl = facebookAPIService.getAuthorizationUrl();
-    let template = HtmlService.createTemplate('<a href="<?= authorizationUrl ?>" target="_blank">Authorize Facebook API</a>.');
+    let template = HtmlService.createTemplate(`<a href="<?= authorizationUrl ?>" target="_blank">${localizedMessages.messageList.facebook.authorizeFacebookAPI}</a>.`);
     template.authorizationUrl = authorizationUrl;
     let page = template.evaluate();
     SpreadsheetApp.getUi().showSidebar(page);
   } else {
     let template = HtmlService.createTemplate(
-      '[Facebook API] You are already authorized.');
+      localizedMessages.messageList.facebook.alreadyAuthorized
+      );
     let page = template.evaluate();
     SpreadsheetApp.getUi().showSidebar(page);
   }
@@ -109,11 +111,12 @@ function getFacebookAPIService_() {
  */
 function authCallbackFacebookAPI_(request) {
   var facebookAPIService = getFacebookAPIService_();
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale());
   var isAuthorized = facebookAPIService.handleCallback(request);
   if (isAuthorized) {
-    return HtmlService.createHtmlOutput('[Facebook API] Success! You can close this tab.');
+    return HtmlService.createHtmlOutput(localizedMessages.messageList.facebook.authorizationSuccessful);
   } else {
-    return HtmlService.createHtmlOutput('[Facebook API] Denied. You can close this tab');
+    return HtmlService.createHtmlOutput(localizedMessages.messageList.facebook.authorizationDenied);
   }
 }
 

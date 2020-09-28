@@ -20,9 +20,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-class LocalizedMessage {
-  constructor(userLocale) {
-    this.locale = userLocale;
+const MESSAGE = {
+  'en_US': {
+    'general': {},
+    'youtube': {},
+    'facebook': {
+      'authorizeFacebookAPI': 'Authorize Facebook Graph API',
+      'alreadyAuthorized': '[Facebook API] You are already authorized.',
+      'authorizationSuccessful': '[Facebook API] Success! You can close this tab.',
+      'authorizationDenied': '[Facebook API] Denied. You can close this tab'
+    }
+  },
+  'ja_JP': {
+    'general': {},
+    'youtube': {},
+    'facebook': {
+      'authorizeFacebookAPI': 'Facebook Graph APIを認証',
+      'alreadyAuthorized': '[Facebook API] すでに認証済みです。',
+      'authorizationSuccessful': '[Facebook API] 認証成功。このタブを閉じても大丈夫です。',
+      'authorizationDenied': '[Facebook API] 認証に失敗しました。このタブは閉じてください。'
+    }
   }
-  
+};
+class LocalizedMessage {
+  constructor(userLocale = 'en_US') {
+    this.locale = userLocale;
+    this.messageList = (MESSAGE[this.locale] ? MESSAGE[this.locale] : MESSAGE.en_US);
+  }
 }
