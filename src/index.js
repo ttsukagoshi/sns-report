@@ -37,39 +37,40 @@ const LOG_SHEET_NAME = '99_Log';
  * Add menu to spreadsheet
  */
 function onOpen() {
-  let ui = SpreadsheetApp.getUi();
+  var ui = SpreadsheetApp.getUi();
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale()); // See locale.js for the list of localized messages
   ui.createMenu('YouTube')
-    .addItem('Authorize', 'showSidebarYouTubeApi')
-    .addItem('Logout/Reset', 'logoutYouTube')
+    .addItem(localizedMessages.messageList.general.index.authorize, 'showSidebarYouTubeApi')
+    .addItem(localizedMessages.messageList.general.index.logoutReset, 'logoutYouTube')
     .addSeparator()
     .addSubMenu(
-      ui.createMenu('Update Channel/Video List')
-        .addItem('Update All', 'updateAllYouTubeList')
+      ui.createMenu(localizedMessages.messageList.general.index.updateChannelVideoList)
+        .addItem(localizedMessages.messageList.general.index.updateAll, 'updateAllYouTubeList')
         .addSeparator()
-        .addItem('Update Channel List', 'updateYouTubeSummaryChannelList')
-        .addItem('Update Video List', 'updateYouTubeSummaryVideoList')
+        .addItem(localizedMessages.messageList.general.index.updateChannelList, 'updateYouTubeSummaryChannelList')
+        .addItem(localizedMessages.messageList.general.index.updateVideoList, 'updateYouTubeSummaryVideoList')
     )
     .addSubMenu(
-      ui.createMenu('Analytics')
-        .addItem('Get Latest Data', 'updateYouTubeAnalyticsData')
+      ui.createMenu(localizedMessages.messageList.general.index.analytics)
+        .addItem(localizedMessages.messageList.general.index.getLatestData, 'updateYouTubeAnalyticsData')
     )
     .addSeparator()
-    .addItem('Create Analytics Summary', 'createYouTubeAnalyticsSummary')
+    .addItem(localizedMessages.messageList.general.index.createAnalyticsSummary, 'createYouTubeAnalyticsSummary')
     .addToUi();
   ui.createMenu('Facebook')
-    .addItem('Authorize', 'showSidebarFacebookApi')
-    .addItem('Logout/Reset', 'logoutFacebook')
+    .addItem(localizedMessages.messageList.general.index.authorize, 'showSidebarFacebookApi')
+    .addItem(localizedMessages.messageList.general.index.logoutReset, 'logoutFacebook')
     .addSeparator()
     .addSubMenu(
-      ui.createMenu('Update Page List')
-        .addItem('Update All', 'updateAllFbList')
+      ui.createMenu(localizedMessages.messageList.general.index.updatePageList)
+        .addItem(localizedMessages.messageList.general.index.updateAll, 'updateAllFbList')
         .addSeparator()
-        .addItem('Update Page List', 'updateFbSummaryPageList')
+        .addItem(localizedMessages.messageList.general.index.updatePageList, 'updateFbSummaryPageList')
     )
     .addToUi();
-  ui.createMenu('Settings')
-    .addItem('Setup', 'initialSettings')
-    .addItem('Check Settings', 'checkSettings')
+  ui.createMenu(localizedMessages.messageList.general.index.settings)
+    .addItem(localizedMessages.messageList.general.index.setup, 'initialSettings')
+    .addItem(localizedMessages.messageList.general.index.checkSettings, 'checkSettings')
     .addToUi();
   ui.createMenu('test')/////////////////////////////////////////////////////
     .addItem('test', 'test')
@@ -77,9 +78,9 @@ function onOpen() {
     .addToUi()
 }
 
-/////////////////////////////
-// Configurations and Misc //
-/////////////////////////////
+//////////////////////
+// Common Functions //
+//////////////////////
 
 /**
  * Standarized error message

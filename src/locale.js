@@ -22,7 +22,23 @@
 
 const MESSAGE = {
   'en_US': {
-    'general': {},
+    'general': {
+      'index': {
+        'authorize': 'Authorize',
+        'logoutReset': 'Logout/Reset',
+        'updateChannelVideoList': 'Update Channel/Video List',
+        'updateAll': 'Update All',
+        'updateChannelList': 'Update Channel List',
+        'updateVideoList': 'Update Video List',
+        'analytics': 'Analytics',
+        'getLatestData': 'Get Latest Data',
+        'createAnalyticsSummary': 'Create Analytics Summary',
+        'updatePageList': 'Update Page List',
+        'settings': 'Settings',
+        'setup': 'Setup',
+        'checkSettings': 'Check Settings'
+      }
+    },
     'youtube': {},
     'facebook': {
       'authorizeFacebookAPI': 'Authorize Facebook Graph API',
@@ -32,7 +48,23 @@ const MESSAGE = {
     }
   },
   'ja_JP': {
-    'general': {},
+    'general': {
+      'index': {
+        'authorize': '認証',
+        'logoutReset': 'ログアウト/リセット',
+        'updateChannelVideoList': 'チャンネル/ビデオ一覧を更新',
+        'updateAll': 'すべてを更新',
+        'updateChannelList': 'チャンネル一覧を更新',
+        'updateVideoList': 'ビデオ一覧を更新',
+        'analytics': 'アナリティクス',
+        'getLatestData': '最新データを取得',
+        'createAnalyticsSummary': 'アナリティクスのサマリー作成',
+        'updatePageList': 'ページ一覧を更新',
+        'settings': '設定',
+        'setup': '初期設定',
+        'checkSettings': '設定確認'
+      }
+    },
     'youtube': {},
     'facebook': {
       'authorizeFacebookAPI': 'Facebook Graph APIを認証',
