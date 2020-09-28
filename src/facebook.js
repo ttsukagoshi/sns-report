@@ -24,7 +24,7 @@
 // Facebook Graph API version to be used
 const FB_API_VERSION = 'v8.0';
 // Spreadsheet ID to use as template for creating a new spreadsheet to enter YouTube analytics data
-const FB_NEW_SPREADSHEET_ID = '';
+const FB_NEW_SPREADSHEET_ID = '';///////////////////////////////////
 // Other global variables are defined on index.js
 
 ///////////////////
@@ -37,15 +37,17 @@ const FB_NEW_SPREADSHEET_ID = '';
  */
 function showSidebarFacebookApi() {
   var facebookAPIService = getFacebookAPIService_();
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale());
   if (!facebookAPIService.hasAccess()) {
     let authorizationUrl = facebookAPIService.getAuthorizationUrl();
-    let template = HtmlService.createTemplate('<a href="<?= authorizationUrl ?>" target="_blank">Authorize Facebook API</a>.');
+    let template = HtmlService.createTemplate(`<a href="<?= authorizationUrl ?>" target="_blank">${localizedMessages.messageList.facebook.authorizeFacebookAPI}</a>.`);
     template.authorizationUrl = authorizationUrl;
     let page = template.evaluate();
     SpreadsheetApp.getUi().showSidebar(page);
   } else {
     let template = HtmlService.createTemplate(
-      '[Facebook API] You are already authorized.');
+      localizedMessages.messageList.facebook.alreadyAuthorized
+      );
     let page = template.evaluate();
     SpreadsheetApp.getUi().showSidebar(page);
   }
@@ -109,11 +111,12 @@ function getFacebookAPIService_() {
  */
 function authCallbackFacebookAPI_(request) {
   var facebookAPIService = getFacebookAPIService_();
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale());
   var isAuthorized = facebookAPIService.handleCallback(request);
   if (isAuthorized) {
-    return HtmlService.createHtmlOutput('[Facebook API] Success! You can close this tab.');
+    return HtmlService.createHtmlOutput(localizedMessages.messageList.facebook.authorizationSuccessful);
   } else {
-    return HtmlService.createHtmlOutput('[Facebook API] Denied. You can close this tab');
+    return HtmlService.createHtmlOutput(localizedMessages.messageList.facebook.authorizationDenied);
   }
 }
 
@@ -259,7 +262,6 @@ function updateFbSummaryPageList(muteUiAlert = false) {
       ];
     }
     );
-
     // Set the text values into spreadsheets (summary and individual)
     //// Renew channel list of summary spreadsheet
     let myPagesSheet = ss.getSheetByName(config.SHEET_NAME_MY_PAGES);
@@ -279,6 +281,114 @@ function updateFbSummaryPageList(muteUiAlert = false) {
       ui.alert('Completed', 'Updated summary page list.', ui.ButtonSet.OK);
     }
     return pageList;
+  } catch (error) {
+    let message = errorMessage_(error);
+    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, message, now);
+    if (!muteUiAlert) {
+      ui.alert('Error', message, ui.ButtonSet.OK);
+    }
+    return null;
+  }
+}
+
+/**
+ * List the authorized user's page(s) posts on the summary & individual year's spreadsheet
+ * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
+ * @returns {array} 2d array containing the page post data
+ */
+
+// posts
+// docs/graph-api/reference/v8.0/page/feed
+// me/feed?fields=id,permalink_url,created_time,backdated_time,place,picture,message,attachments,properties
+function updateFbPagePostList(muteUiAlert = false) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var timeZone = ss.getSpreadsheetTimeZone();
+  var ui = SpreadsheetApp.getUi();
+  var scriptProperties = PropertiesService.getScriptProperties().getProperties();
+  var config = getConfig_();
+  var fbCurrentYear = parseInt(scriptProperties.fbCurrentYear);
+  var now = new Date();
+  // Getting the target spreadsheet
+  var spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
+  var options = {
+    createNewFile: true,
+    driveFolderId: scriptProperties.driveFolderId,
+    templateFileId: FB_NEW_SPREADSHEET_ID,
+    newFileName: 'Facebook Insights',
+    newFileNamePrefix: config.SPREADSHEET_NAME_PREFIX
+  };
+  var spreadsheetUrl = spreadsheetUrl_(spreadsheetListName, fbCurrentYear, 'Facebook', options).url;
+  // Setting the parameters for getting page posts
+  var postEdge = 'feed';
+  var postFields = [
+    'id',
+    'permalink_url',
+    'created_time',
+    'backdated_time',
+    'place',
+    'picture',
+    'message',
+    'attachments',
+    'properties'
+  ];
+  try {
+    // Get list of page(s)
+    let pageListFull = getFbPages_();
+    // Extract data for copying into spreadsheet
+    let postList = [];
+    for (let i = 0; i < pageListFull.length; i++) {
+      let pageId = pageListFull[i].id;
+      let posts = JSON.parse(getFbGraphData(pageId, postEdge, postFields));
+      let postsData = posts.data.slice();
+      let nextUrl = posts.paging.next || null;
+      while (nextUrl) {
+        let nextResponse = JSON.parse(UrlFetchApp.fetch(nextUrl, {
+          method: 'GET',
+          contentType: 'application/json; charset=UTF-8'
+        }));
+        postsData = postsData.concat(nextResponse.data);
+        nextUrl = nextResponse.paging.next || null;
+      }
+      postList = postList.concat(postsData);
+    }
+    let postListSS = postList.reduce((accList, post) => {
+      if (checkYear_(post.created_time, fbCurrentYear, 'PST')) { // See index.js for definition of checkYear_()
+        // Create post of the current year based on Pacific Time (daylight saving time taken into account)
+        let postId = post.id;
+        let postPermalink_url = post.permalink_url;
+        let postCreatedTime = post.created_time;
+        let postPlace = post.place || {'name': 'NA', 'id': 'NA'};
+        let postPlaceName = postPlace.name;
+        let postPlaceId = postPlace.id;
+        let postPictureUrl = post.picture || 'NA';
+        let postPictureImage = (post.picture ? `=image("${post.picture}")` : 'NA');
+        let postMessage = post.message;
+        let postData = [
+          postId,
+          postPermalink_url,
+          postCreatedTime,
+          postPlaceName,
+          postPlaceId,
+          postPictureUrl,
+          postPictureImage,
+          postMessage,
+        ];
+        //////////////////////////////////////////////////////
+        accList.push(postData);
+      }
+      return accList;
+    }, []);
+    /////////////////////////////////////////////////////////////
+    // Set the text values into spreadsheet
+    let currentSheet = SpreadsheetApp.openByUrl(spreadsheetUrl).getSheetByName(config.SHEET_NAME_PAGE_POSTS);
+    currentSheet.getRange(currentSheet.getLastRow() + 1, 1, postListSS.length, postListSS[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
+      .setValues(postListSS);
+    // Log & Notify
+    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, 'Success: updated page post list.', now);
+    if (!muteUiAlert) {
+      ui.alert('Completed', 'Updated page post list.', ui.ButtonSet.OK);
+    }
+    return postListSS;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, message, now);
