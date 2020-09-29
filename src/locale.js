@@ -37,9 +37,28 @@ const MESSAGE = {
         'settings': 'Settings',
         'setup': 'Setup',
         'checkSettings': 'Check Settings'
+      },
+      'error': {
+        'errorTitle': 'Error',
+        'spreadsheetUrl_': {
+          'templateFileIdIsMissingInOptions': 'The key "templateFileId" is missing in "options".'
+        }
+      },
+      'misc': {
+        'completedTitle': 'Completed'
       }
     },
-    'youtube': {},
+    'youtube': {
+      'authorizeYouTubeAPI': 'Authorize YouTube Data/Analytics API',
+      'alreadyAuthorized': '[YouTube Data/Analytics API] You are already authorized.',
+      'authorizationSuccessful': '[YouTube Data/Analytics API] Success! You can close this tab.',
+      'authorizationDenied': '[YouTube Data/Analytics API] Denied. You can close this tab',
+      'updatedChannelListLog': 'Success: updated channel list.',
+      'updatedChannelListAlert': 'Updated summary channel list.',
+      'updatedVideoListLog': 'Success: updated video list.',
+      'updatedVideoListAlert': 'Updated summary video list.',
+      'updateYouTubeAnalyticsDataMailTemplate': 'This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report'
+    },
     'facebook': {
       'authorizeFacebookAPI': 'Authorize Facebook Graph API',
       'alreadyAuthorized': '[Facebook API] You are already authorized.',
@@ -63,9 +82,28 @@ const MESSAGE = {
         'settings': '設定',
         'setup': '初期設定',
         'checkSettings': '設定確認'
+      },
+      'error': {
+        'errorTitle': 'エラー',
+        'spreadsheetUrl_': {
+          'templateFileIdIsMissingInOptions': '変数"option"内のキー"templateFileId"が指定されていません。'
+        }
+      },
+      'misc': {
+        'completedTitle': '完了'
       }
     },
-    'youtube': {},
+    'youtube': {
+      'authorizeYouTubeAPI': 'YouTube Data/Analytics APIを認証',
+      'alreadyAuthorized': '[YouTube Data/Analytics API] すでに認証済みです。',
+      'authorizationSuccessful': '[YouTube Data/Analytics API] 認証成功。このタブを閉じても大丈夫です。',
+      'authorizationDenied': '[YouTube Data/Analytics API] 認証に失敗しました。このタブは閉じてください。',
+      'updatedChannelListLog': 'Success: updated channel list.', // Log message will not be translated.
+      'updatedChannelListAlert': 'チャンネル一覧を更新完了。',
+      'updatedVideoListLog': 'Success: updated video list.', // Log message will not be translated.
+      'updatedVideoListAlert': 'ビデオ一覧を更新完了。',
+      'updateYouTubeAnalyticsDataMailTemplate': 'This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report'
+    },
     'facebook': {
       'authorizeFacebookAPI': 'Facebook Graph APIを認証',
       'alreadyAuthorized': '[Facebook API] すでに認証済みです。',
@@ -78,5 +116,9 @@ class LocalizedMessage {
   constructor(userLocale = 'en_US') {
     this.locale = userLocale;
     this.messageList = (MESSAGE[this.locale] ? MESSAGE[this.locale] : MESSAGE.en_US);
+  }
+  updateYouTubeAnalyticsDataMailTemplateUrl(spreadsheetUrl) {
+    this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate = this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate.replace('{{spreadsheetUrl}}', spreadsheetUrl);
+    return this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate;
   }
 }

@@ -169,6 +169,7 @@ function checkYear_(dateString, checkYear, timeZone = Session.getScriptTimeZone(
  * {boolean} created - True when a new spreadsheet is created.
  */
 function spreadsheetUrl_(spreadsheetListName, targetYear, platform, options = {}) {
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale()); // See locale.js for the list of localized messages
   var optionsDefault = {
     createNewFile: false,
     driveFolderId: '',
@@ -202,13 +203,12 @@ function spreadsheetUrl_(spreadsheetListName, targetYear, platform, options = {}
       enterLog_(SpreadsheetApp.openByUrl(newFileUrl).getId(), LOG_SHEET_NAME, 'Spreadsheet created.');
       return { 'url': newFileUrl, 'created': true };
     } else if (options.createNewFile && !options.templateFileId) {
-      throw new Error('The key "templateFileId" is missing in "options".');
+      throw new Error(localizedMessages.messageList.general.error.spreadsheetUrl_.templateFileIdIsMissingInOptions);
     } else {
       return { 'url': null, 'created': false };
     }
   } catch (error) {
-    let message = errorMessage_(error);
-    throw new Error(message);
+    throw error;
   }
 }
 

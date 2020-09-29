@@ -37,15 +37,16 @@ const YOUTUBE_NEW_SPREADSHEET_ID = '16duRDHJ8d6k6xy0C2_m2IkHxIJc-OPLp7SuQD02gzig
  */
 function showSidebarYouTubeApi() {
   var youtubeAPIService = getYouTubeAPIService_();
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale());
   if (!youtubeAPIService.hasAccess()) {
     let authorizationUrl = youtubeAPIService.getAuthorizationUrl();
-    let template = HtmlService.createTemplate('<a href="<?= authorizationUrl ?>" target="_blank">Authorize YouTube Data/Analytics API</a>.');
+    let template = HtmlService.createTemplate(`<a href="<?= authorizationUrl ?>" target="_blank">${localizedMessages.messageList.youtube.authorizeYouTubeAPI}</a>.`);
     template.authorizationUrl = authorizationUrl;
     let page = template.evaluate();
     SpreadsheetApp.getUi().showSidebar(page);
   } else {
     let template = HtmlService.createTemplate(
-      '[YouTube Data/Analytics API] You are already authorized.');
+      localizedMessages.messageList.youtube.alreadyAuthorized);
     let page = template.evaluate();
     SpreadsheetApp.getUi().showSidebar(page);
   }
@@ -108,11 +109,12 @@ function getYouTubeAPIService_() {
  */
 function authCallbackYouTubeAPI_(request) {
   var youtubeAPIService = getYouTubeAPIService_();
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale());
   var isAuthorized = youtubeAPIService.handleCallback(request);
   if (isAuthorized) {
-    return HtmlService.createHtmlOutput('[YouTube Data/Analytics API] Success! You can close this tab.');
+    return HtmlService.createHtmlOutput(localizedMessages.messageList.youtube.authorizationSuccessful);
   } else {
-    return HtmlService.createHtmlOutput('[YouTube Data/Analytics API] Denied. You can close this tab');
+    return HtmlService.createHtmlOutput(localizedMessages.messageList.youtube.authorizationDenied);
   }
 }
 
@@ -134,6 +136,7 @@ function updateAllYouTubeList() {
  */
 function updateYouTubeSummaryChannelList(muteUiAlert = false) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var timeZone = ss.getSpreadsheetTimeZone();
   var ui = SpreadsheetApp.getUi();
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
@@ -174,16 +177,16 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
       .setValues(channelList);
     // Log & Notify
-    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, 'Success: updated channel list.', now)
+    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, localizedMessages.messageList.youtube.updatedChannelListLog, now)
     if (!muteUiAlert) {
-      ui.alert('Completed', 'Updated summary channel list.', ui.ButtonSet.OK);
+      ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.youtube.updatedChannelListAlert, ui.ButtonSet.OK);
     }
     return channelList;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, message, now)
     if (!muteUiAlert) {
-      ui.alert('Error', message, ui.ButtonSet.OK);
+      ui.alert(localizedMessages.messageList.error.errorTitle, message, ui.ButtonSet.OK);
     }
     return null;
   }
@@ -195,6 +198,7 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
  */
 function updateYouTubeSummaryVideoList(muteUiAlert = false) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var timeZone = ss.getSpreadsheetTimeZone();
   var ui = SpreadsheetApp.getUi();
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
@@ -264,16 +268,16 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, videoList.length, videoList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
       .setValues(videoList);
     // Log & Notify
-    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, 'Success: updated video list.', now);
+    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, localizedMessages.messageList.youtube.updatedVideoListLog, now);
     if (!muteUiAlert) {
-      ui.alert('Completed', 'Updated summary video list.', ui.ButtonSet.OK);
+      ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.youtube.updatedVideoListAlert, ui.ButtonSet.OK);
     }
     return videoList;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, message, now);
     if (!muteUiAlert) {
-      ui.alert('Error', message, ui.ButtonSet.OK);
+      ui.alert(localizedMessages.messageList.general.error.errorTitle, message, ui.ButtonSet.OK);
     }
     return null;
   }
@@ -309,7 +313,7 @@ function youtubeMyChannelList_() {
     }
     return channelList.items;
   } catch (error) {
-    throw new Error(errorMessage_(error));
+    throw error;
   }
 }
 
@@ -344,7 +348,7 @@ function youtubeMyVideoList_() {
     }
     return videoList.items;
   } catch (error) {
-    throw new Error(errorMessage_(error));
+    throw error;
   }
 }
 
@@ -380,7 +384,7 @@ function youtubeChannels_(channelIds, getDetails = false) {
     }
     return channelDetails.items;
   } catch (error) {
-    throw new Error(errorMessage_(error));
+    throw error;
   }
 }
 
@@ -416,7 +420,7 @@ function youtubeVideos_(videoIds, getDetails = false) {
     }
     return videoDetails.items;
   } catch (error) {
-    throw new Error(errorMessage_(error));
+    throw error;
   }
 }
 
@@ -466,10 +470,9 @@ function youtubeData_(resourceType, parameters) {
  */
 function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = true) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var myEmail = Session.getActiveUser().getEmail();
-  var mailTemplate =
-    `This is an automatic mail that can be stopped or modified at:\n${ss.getUrl()}\n\n`
-    + 'For more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report';
+  var mailTemplate = localizedMessages.updateYouTubeAnalyticsDataMailTemplateUrl(ss.getUrl());
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
   var yearLimit = true;
   try {
@@ -532,7 +535,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
         + mailTemplate;
       MailApp.sendEmail(myEmail, subject, body);
     }
-    throw new Error(message);
+    throw error;
   }
 
 }
