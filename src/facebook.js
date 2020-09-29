@@ -357,6 +357,7 @@ function updateFbPagePostList(muteUiAlert = false) {
         let postId = post.id;
         let postPermalink_url = post.permalink_url;
         let postCreatedTime = post.created_time;
+        let postBackdatedTime = post.backdated_time || 'NA';
         let postPlace = post.place || {'name': 'NA', 'id': 'NA'};
         let postPlaceName = postPlace.name;
         let postPlaceId = postPlace.id;
@@ -367,6 +368,7 @@ function updateFbPagePostList(muteUiAlert = false) {
           postId,
           postPermalink_url,
           postCreatedTime,
+          postBackdatedTime,
           postPlaceName,
           postPlaceId,
           postPictureUrl,
