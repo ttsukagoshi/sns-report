@@ -117,6 +117,17 @@ class LocalizedMessage {
     this.locale = userLocale;
     this.messageList = (MESSAGE[this.locale] ? MESSAGE[this.locale] : MESSAGE.en_US);
   }
+  /**
+   * 
+   * @param {string} text 
+   * @param {array} placeholderValues Array of objects containing a pair of placeholder string (key) and its corresponding value.
+   * @returns {string} The replaced text.
+   */
+  replacePlaceholders_(text, placeholderValues = []) {
+    let replacedText = placeholderValues.reduce((acc, cur) => acc.replace(cur.regex, cur.value), text);
+    return replacedText;
+  }
+
   updateYouTubeAnalyticsDataMailTemplateUrl(spreadsheetUrl) {
     this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate = this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate.replace('{{spreadsheetUrl}}', spreadsheetUrl);
     return this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate;
