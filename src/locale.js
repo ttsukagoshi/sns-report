@@ -122,11 +122,14 @@ class LocalizedMessage {
   /**
    * 
    * @param {string} text 
-   * @param {array} placeholderValues Array of objects containing a pair of placeholder string (key) and its corresponding value.
+   * @param {array} placeholderValues Array of objects containing a placeholder string expressed in regular expression and its corresponding value.
    * @returns {string} The replaced text.
    */
   replacePlaceholders_(text, placeholderValues = []) {
-    let replacedText = placeholderValues.reduce((acc, cur) => acc.replace(cur.regex, cur.value), text);
+    let replacedText = placeholderValues.reduce((acc, cur) => {
+      let regex = new RegExp(cur.regex, 'g');
+      acc.replace(regex, cur.value)
+    }, text);
     return replacedText;
   }
 
