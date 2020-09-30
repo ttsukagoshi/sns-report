@@ -472,7 +472,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var myEmail = Session.getActiveUser().getEmail();
-  var mailTemplate = localizedMessages.updateYouTubeAnalyticsDataMailTemplateUrl(ss.getUrl());
+  var mailTemplate = localizedMessages.replaceUpdateYouTubeAnalyticsDataMailTemplate(ss.getUrl());
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
   var yearLimit = true;
   try {
@@ -511,7 +511,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
         PropertiesService.getScriptProperties().setProperty('ytCurrentYear', year);
         if (newFileUrl.created) {
           if (!muteUiAlert) {
-            SpreadsheetApp.getUi().alert(`New YouTube spreadsheet created for ${year}:\n${newFileUrl.url}`);
+            SpreadsheetApp.getUi().alert(`New YouTube spreadsheet created for ${year}:\n${newFileUrl.url}`);/////////////////////
           }
           if (!muteMailNotification) {
             let subject = `[SNS Report] New YouTube Spreadsheet Created for ${year}`;

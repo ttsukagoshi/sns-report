@@ -57,7 +57,8 @@ const MESSAGE = {
       'updatedChannelListAlert': 'Updated summary channel list.',
       'updatedVideoListLog': 'Success: updated video list.',
       'updatedVideoListAlert': 'Updated summary video list.',
-      'updateYouTubeAnalyticsDataMailTemplate': 'This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report'
+      'updateYouTubeAnalyticsDataMailTemplate': 'This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report',
+      'newYouTubeSpreadsheetCreatedAlert': 'New YouTube spreadsheet created for {{year}}:\n{{newFileUrl}}'
     },
     'facebook': {
       'authorizeFacebookAPI': 'Authorize Facebook Graph API',
@@ -102,7 +103,8 @@ const MESSAGE = {
       'updatedChannelListAlert': 'チャンネル一覧を更新完了。',
       'updatedVideoListLog': 'Success: updated video list.', // Log message will not be translated.
       'updatedVideoListAlert': 'ビデオ一覧を更新完了。',
-      'updateYouTubeAnalyticsDataMailTemplate': 'This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report'
+      'updateYouTubeAnalyticsDataMailTemplate': 'This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report',
+      'newYouTubeSpreadsheetCreatedAlert': 'New YouTube spreadsheet created for {{year}}:\n{{newFileUrl}}'
     },
     'facebook': {
       'authorizeFacebookAPI': 'Facebook Graph APIを認証',
@@ -128,8 +130,26 @@ class LocalizedMessage {
     return replacedText;
   }
 
-  updateYouTubeAnalyticsDataMailTemplateUrl(spreadsheetUrl) {
-    this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate = this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate.replace('{{spreadsheetUrl}}', spreadsheetUrl);
-    return this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate;
+  /**
+   * Replace placeholder string in this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate
+   * @param {string} spreadsheetUrl Text to replace the placeholder.
+   */
+  replaceUpdateYouTubeAnalyticsDataMailTemplate(spreadsheetUrl) {
+    let text = this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate.slice();
+    text = text.replace(/\{\{spreadsheetUrl\}\}/g, spreadsheetUrl);
+    this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate = text.slice();
+    return text;
+  }
+  /**
+   * 
+   * @param {number|string} year 
+   * @param {string} newFileUrl 
+   */
+  replaceNewYouTubeSpreadsheetCreatedAlert(year, newFileUrl) {
+    let text = this.messageList.youtube.newYouTubeSpreadsheetCreatedAlert.slice();
+    text = text.replace(/\{\{year\}\}/g, year)
+      .replace(/\{\{newFileUrl\}\}/g, newFileUrl);
+    this.messageList.youtube.newYouTubeSpreadsheetCreatedAlert = text.slice();
+    return text;
   }
 }
