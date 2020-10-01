@@ -511,12 +511,11 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
         PropertiesService.getScriptProperties().setProperty('ytCurrentYear', year);
         if (newFileUrl.created) {
           if (!muteUiAlert) {
-            SpreadsheetApp.getUi().alert(`New YouTube spreadsheet created for ${year}:\n${newFileUrl.url}`);/////////////////////
+            SpreadsheetApp.getUi().alert(localizedMessages.replaceNewYouTubeSpreadsheetCreatedAlert(year, newFileUrl.url));
           }
           if (!muteMailNotification) {
-            let subject = `[SNS Report] New YouTube Spreadsheet Created for ${year}`;
-            let body = `New spreadsheet created to record YouTube analytics data for year ${year} at:\n${newFileUrl.url}\n\n`
-              + mailTemplate;
+            let subject = localizedMessages.replaceNewYouTubeSpreadsheetCreatedMailSubject(year);
+            let body = localizedMessages.replaceNewYouTubeSpreadsheetCreatedMailBody(year, newFileUrl.url) + mailTemplate;
             MailApp.sendEmail(myEmail, subject, body);
           }
         }
@@ -530,14 +529,12 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
       SpreadsheetApp.getUi().alert(message);
     }
     if (!muteMailNotification) {
-      let subject = '[SNS Report] Error Detected';
-      let body = `${message}\n\n`
-        + mailTemplate;
+      let subject = localizedMessages.messageList.general.error.errorMailSubject;
+      let body = `${message}\n\n` + mailTemplate;
       MailApp.sendEmail(myEmail, subject, body);
     }
     throw error;
   }
-
 }
 
 /**

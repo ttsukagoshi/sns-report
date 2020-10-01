@@ -40,6 +40,7 @@ const MESSAGE = {
       },
       'error': {
         'errorTitle': 'Error',
+        'errorMailSubject': '[SNS Report] Error Detected',
         'spreadsheetUrl_': {
           'templateFileIdIsMissingInOptions': 'The key "templateFileId" is missing in "options".'
         }
@@ -57,8 +58,10 @@ const MESSAGE = {
       'updatedChannelListAlert': 'Updated summary channel list.',
       'updatedVideoListLog': 'Success: updated video list.',
       'updatedVideoListAlert': 'Updated summary video list.',
-      'updateYouTubeAnalyticsDataMailTemplate': 'This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report',
-      'newYouTubeSpreadsheetCreatedAlert': 'New YouTube spreadsheet created for {{year}}:\n{{newFileUrl}}'
+      'updateYouTubeAnalyticsDataMailTemplate': `This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see ${GITHUB_URL}`,
+      'newYouTubeSpreadsheetCreatedAlert': 'New YouTube spreadsheet created for {{year}}:\n{{url}}',
+      'newYouTubeSpreadsheetCreatedMailSubject': '[SNS Report] New YouTube Spreadsheet Created for {{year}}',
+      'newYouTubeSpreadsheetCreatedMailBody': 'New spreadsheet created to record YouTube analytics data for year {{year}} at:\n{{url}}\n\n'
     },
     'facebook': {
       'authorizeFacebookAPI': 'Authorize Facebook Graph API',
@@ -86,6 +89,7 @@ const MESSAGE = {
       },
       'error': {
         'errorTitle': 'エラー',
+        'errorMailSubject': '[SNS Report] Error Detected',
         'spreadsheetUrl_': {
           'templateFileIdIsMissingInOptions': '変数"option"内のキー"templateFileId"が指定されていません。'
         }
@@ -103,8 +107,10 @@ const MESSAGE = {
       'updatedChannelListAlert': 'チャンネル一覧を更新完了。',
       'updatedVideoListLog': 'Success: updated video list.', // Log message will not be translated.
       'updatedVideoListAlert': 'ビデオ一覧を更新完了。',
-      'updateYouTubeAnalyticsDataMailTemplate': 'This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see https://github.com/ttsukagoshi/sns-report',
-      'newYouTubeSpreadsheetCreatedAlert': 'New YouTube spreadsheet created for {{year}}:\n{{newFileUrl}}'
+      'updateYouTubeAnalyticsDataMailTemplate': `This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see ${GITHUB_URL}`,
+      'newYouTubeSpreadsheetCreatedAlert': 'New YouTube spreadsheet created for {{year}}:\n{{url}}',
+      'newYouTubeSpreadsheetCreatedMailSubject': '[SNS Report] New YouTube Spreadsheet Created for {{year}}',
+      'newYouTubeSpreadsheetCreatedMailBody': 'New spreadsheet created to record YouTube analytics data for year {{year}} at:\n{{url}}\n\n'
     },
     'facebook': {
       'authorizeFacebookAPI': 'Facebook Graph APIを認証',
@@ -120,39 +126,87 @@ class LocalizedMessage {
     this.messageList = (MESSAGE[this.locale] ? MESSAGE[this.locale] : MESSAGE.en_US);
   }
   /**
-   * 
+   * Replace placeholder values in the designated text. String.prototype.replace() is executed using regular expressions with the 'global' flag on.
    * @param {string} text 
    * @param {array} placeholderValues Array of objects containing a placeholder string expressed in regular expression and its corresponding value.
    * @returns {string} The replaced text.
    */
   replacePlaceholders_(text, placeholderValues = []) {
-    let replacedText = placeholderValues.reduce((acc, cur) => {
-      let regex = new RegExp(cur.regex, 'g');
-      acc.replace(regex, cur.value)
-    }, text);
+    let replacedText = placeholderValues.reduce((acc, cur) => acc.replace(new RegExp(cur.regexp, 'g'), cur.value), text);
     return replacedText;
   }
-
   /**
    * Replace placeholder string in this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate
    * @param {string} spreadsheetUrl Text to replace the placeholder.
+   * @returns {string} The replaced text.
    */
   replaceUpdateYouTubeAnalyticsDataMailTemplate(spreadsheetUrl) {
-    let text = this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate.slice();
-    text = text.replace(/\{\{spreadsheetUrl\}\}/g, spreadsheetUrl);
-    this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate = text.slice();
+    let text = this.messageList.youtube.updateYouTubeAnalyticsDataMailTemplate;
+    let placeholderValues = [
+      {
+        'regexp': '\{\{url\}\}',
+        'value': spreadsheetUrl
+      }
+    ];
+    text = this.replacePlaceholders_(text, placeholderValues);
     return text;
   }
   /**
-   * 
+   * Replace placeholder string in this.messageList.youtube.newYouTubeSpreadsheetCreatedAlert
    * @param {number|string} year 
-   * @param {string} newFileUrl 
+   * @param {string} url
+   * @returns {string} The replaced text.
    */
-  replaceNewYouTubeSpreadsheetCreatedAlert(year, newFileUrl) {
-    let text = this.messageList.youtube.newYouTubeSpreadsheetCreatedAlert.slice();
-    text = text.replace(/\{\{year\}\}/g, year)
-      .replace(/\{\{newFileUrl\}\}/g, newFileUrl);
-    this.messageList.youtube.newYouTubeSpreadsheetCreatedAlert = text.slice();
+  replaceNewYouTubeSpreadsheetCreatedAlert(year, url) {
+    let text = this.messageList.youtube.newYouTubeSpreadsheetCreatedAlert;
+    let placeholderValues = [
+      {
+        'regexp': '\{\{year\}\}',
+        'value': year
+      },
+      {
+        'regexp': '\{\{url\}\}',
+        'value': url
+      }
+    ];
+    text = this.replacePlaceholders_(text, placeholderValues);
+    return text;
+  }
+  /**
+   * Replace placeholder string in this.messageList.youtube.newYouTubeSpreadsheetCreatedMailSubject
+   * @param {number|string} year
+   * @returns {string} The replaced text.
+   */
+  replaceNewYouTubeSpreadsheetCreatedMailSubject(year) {
+    let text = this.messageList.youtube.newYouTubeSpreadsheetCreatedMailSubject;
+    let placeholderValues = [
+      {
+        'regexp': '\{\{year\}\}',
+        'value': year
+      }
+    ];
+    text = this.replacePlaceholders_(text, placeholderValues);
+    return text;
+  }
+  /**
+ * Replace placeholder string in this.messageList.youtube.newYouTubeSpreadsheetCreatedMailBody
+ * @param {number|string} year 
+ * @param {string} url
+ * @returns {string} The replaced text.
+ */
+  replaceNewYouTubeSpreadsheetCreatedMailBody(year, url) {
+    let text = this.messageList.youtube.newYouTubeSpreadsheetCreatedMailBody;
+    let placeholderValues = [
+      {
+        'regexp': '\{\{year\}\}',
+        'value': year
+      },
+      {
+        'regexp': '\{\{url\}\}',
+        'value': url
+      }
+    ];
+    text = this.replacePlaceholders_(text, placeholderValues);
     return text;
   }
 }

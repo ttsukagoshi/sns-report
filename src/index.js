@@ -31,6 +31,7 @@
 // See https://github.com/gsuitedevs/apps-script-oauth2
 
 const LOG_SHEET_NAME = '99_Log';
+const GITHUB_URL = 'https://github.com/ttsukagoshi/sns-report';
 
 /**
  * onOpen()
