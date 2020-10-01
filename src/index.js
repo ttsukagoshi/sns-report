@@ -90,7 +90,12 @@ const MESSAGE = {
       'authorizeFacebookAPI': 'Authorize Facebook Graph API',
       'alreadyAuthorized': '[Facebook API] You are already authorized.',
       'authorizationSuccessful': '[Facebook API] Success! You can close this tab.',
-      'authorizationDenied': '[Facebook API] Denied. You can close this tab'
+      'authorizationDenied': '[Facebook API] Denied. You can close this tab',
+      'errorUnauthorized': 'Unauthorized. Get authorized by Menu > Facebook > Authorize',
+      'updatedPageListLog': 'Success: updated page list.',
+      'updatedPageListAlert': 'Updated summary page list.',
+      'updatedPagePostListLog': 'Success: updated page post list.',
+      'updatedPagePostListAlert': 'Updated page post list.'
     }
   },
   'ja_JP': {
@@ -150,7 +155,12 @@ const MESSAGE = {
       'authorizeFacebookAPI': 'Facebook Graph APIを認証',
       'alreadyAuthorized': '[Facebook API] すでに認証済みです。',
       'authorizationSuccessful': '[Facebook API] 認証成功。このタブを閉じても大丈夫です。',
-      'authorizationDenied': '[Facebook API] 認証に失敗しました。このタブは閉じてください。'
+      'authorizationDenied': '[Facebook API] 認証に失敗しました。このタブは閉じてください。',
+      'errorUnauthorized': 'Unauthorized. Get authorized by Menu > Facebook > Authorize',
+      'updatedPageListLog': 'Success: updated page list.', // Log message will not be translated.
+      'updatedPageListAlert': 'Updated summary page list.',
+      'updatedPagePostListLog': 'Success: updated page post list.', // Log message will not be translated.
+      'updatedPagePostListAlert': 'Updated page post list.'
     }
   }
 };
