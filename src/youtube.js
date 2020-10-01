@@ -554,6 +554,7 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
   var targetSpreadsheet = SpreadsheetApp.openByUrl(targetSpreadsheetUrl);
   var targetSheet = targetSpreadsheet.getSheetByName(config.SHEET_NAME_CHANNEL_ANALYTICS);
   var now = new Date();
+  var localizedMessages = new LocalizedMessage(targetSpreadsheet.getSpreadsheetLocale());
   try {
     // Check the date of the latest analytics data and define startDate for youtubeAnalyticsReportsQuery_()
     // If the value returned for getLatestDate_() is null, i.e., there are no previous dates recorded in targetSheet,
@@ -599,15 +600,15 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
       updatedLatestDateObj.latestDateOnSpreadsheet = getLatestDate_(targetSheet, 1);
       updatedLatestDateObj.latestDateReturned = yMd2Date_(data.latest);
       // Log
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube channel analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)}.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.replaceUpdatedYouTubeChannelAnalyticsLog(startDate, formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)), now);
     } else {
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: no updates for YouTube channel analytics.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.messageList.youtube.noUpdatesForYouTubeChannelAnalyticsLog, now);
     }
     return updatedLatestDateObj;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
-    throw new Error(message);
+    throw error;
   }
 }
 
@@ -648,6 +649,7 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
   var targetSpreadsheet = SpreadsheetApp.openByUrl(targetSpreadsheetUrl);
   var targetSheet = targetSpreadsheet.getSheetByName(config.SHEET_NAME_CHANNEL_DEMOGRAPHICS);
   var now = new Date();
+  var localizedMessages = new LocalizedMessage(targetSpreadsheet.getSpreadsheetLocale());
   try {
     // Check the month of the latest analytics data and define startDate for youtubeAnalyticsReportsQuery_()
     // If the value returned for getLatestMonth_() is null, i.e., there are no previous month recorded in targetSheet,
@@ -698,12 +700,12 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
     // Copy on spreadsheet
     targetSheet.getRange(2, 1, existingDataUpdate.length, existingDataUpdate[0].length).setValues(existingDataUpdate); // Assuming that the 1st row of the targetSheet is header row and that the actual data starts from the 2nd row
     // Log
-    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube channel demographics for ${latestMonth} to ${thisYearMonth}.`, now);
+    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.replaceUpdatedYouTubeChannelDemographicsLog(latestMonth, thisYearMonth), now);
     return thisYearMonth;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
-    throw new Error(message);
+    throw error;
   }
 }
 
@@ -722,6 +724,7 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
   var targetSpreadsheet = SpreadsheetApp.openByUrl(targetSpreadsheetUrl);
   var targetSheet = targetSpreadsheet.getSheetByName(config.SHEET_NAME_VIDEO_ANALYTICS);
   var now = new Date();
+  var localizedMessages = new LocalizedMessage(targetSpreadsheet.getSpreadsheetLocale());
   try {
     // Check the date of the latest analytics data and define startDate for youtubeAnalyticsReportsQuery_()
     // If the value returned for getLatestDate_() is null, i.e., there are no previous dates recorded in targetSheet,
@@ -778,15 +781,15 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
       updatedLatestDateObj.latestDateOnSpreadsheet = getLatestDate_(targetSheet, 1);
       updatedLatestDateObj.latestDateReturned = yMd2Date_(data.latest);
       // Log
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: updated YouTube video analytics for ${startDate} to ${formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)}.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.replaceUpdatedYouTubeVideoAnalyticsLog(startDate, formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)), now);
     } else {
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, `Success: no updates for YouTube video analytics.`, now);
+      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.messageList.youtube.noUpdatesForYouTubeVideoAnalyticsLog, now);
     }
     return updatedLatestDateObj;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
-    throw new Error(message);
+    throw error;
   }
 }
 
@@ -802,6 +805,7 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
  * @param {Object} options [Optional] A JavaScript object for additional parameters outlined in https://developers.google.com/youtube/analytics/reference/reports/query#Parameters
  */
 function youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids = 'channel==MINE', options = null) {
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale());
   var parameters = {
     'startDate': startDate,
     'endDate': endDate,
@@ -816,7 +820,7 @@ function youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids = 'chann
   try {
     let youtubeAPIService = getYouTubeAPIService_();
     if (!youtubeAPIService.hasAccess()) {
-      throw new Error('Unauthorized. Get authorized by Menu > YouTube > Authorize');
+      throw new Error(localizedMessages.messageList.youtube.errorUnauthorized);
     }
     let baseUrl = `https://youtubeanalytics.googleapis.com/${YOUTUBE_ANALYTICS_API_VERSION}/reports`;
     let paramString = '?';
@@ -837,7 +841,7 @@ function youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids = 'chann
     });
     return response;
   } catch (error) {
-    throw new Error(errorMessage_(error));
+    throw error;
   }
 }
 
@@ -853,6 +857,7 @@ function createYouTubeAnalyticsSummary() {
   var ui = SpreadsheetApp.getUi();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var ssTimeZone = ss.getSpreadsheetTimeZone();
+  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var config = getConfig_();
   var summarySheet = ss.getSheetByName(config.SHEET_NAME_YOUTUBE_SUMMARY);
   var videoSheet = ss.getSheetByName(config.SHEET_NAME_YOUTUBE_VIDEOS);
@@ -866,17 +871,17 @@ function createYouTubeAnalyticsSummary() {
     let myChannelListFull = youtubeMyChannelList_();
     let myChannelIds = myChannelListFull.map(element => element.id);
     if (!targetChannelId) {
-      throw new Error('No text entered for channel ID.');
+      throw new Error(localizedMessages.messageList.youtube.errorNoTextEnteredForChannelId);
     } else if (!myChannelIds.includes(targetChannelId)) {
-      throw new Error(`Invalid Channel ID: "${targetChannelId}".\nMake sure to enter the ID of the YouTube channel that you own.`)
+      throw new Error(localizedMessages.replaceErrorInvalidChannelId(targetChannelId))
     }
     let targetChannelName = myChannelListFull.filter(element => element.id == targetChannelId)[0].snippet.title;
     // Report month
     let reportMonth = summarySheet.getRange(4, 5).getValue(); // Assuming that the target report month is entered in this cell
     if (!reportMonth) {
-      throw new Error('No text entered for report month.');
+      throw new Error(localizedMessages.messageList.youtube.errorNoTextEnteredForReportMonth);
     } else if (!reportMonth.match(/^\d{4}-\d{2}$/)) {
-      throw new Error(`Invalid period: "${reportMonth}".\nMake sure the report month is expressed in "yyyy-MM", e.g., enter "2020-03" for getting report for March 2020.`);
+      throw new Error(localizedMessages.replaceErrorInvalidReportMonth(reportMonth));
     }
     let targetPeriodStartPre = new Date(parseInt(reportMonth.slice(0, 4)) - 2, parseInt(reportMonth.slice(-2)) - 1, 1);
     let targetPeriodStart = new Date(targetPeriodStartPre.setMonth(targetPeriodStartPre.getMonth() + 1));
@@ -889,10 +894,6 @@ function createYouTubeAnalyticsSummary() {
     let muteUiAlert = true;
     let channelList = updateYouTubeSummaryChannelList(muteUiAlert);
     let videoList = updateYouTubeSummaryVideoList(muteUiAlert);
-    /* for testing
-    let videoList = ss.getSheetByName(config.SHEET_NAME_MY_VIDEOS).getDataRange().getValues();
-    videoList.shift();
-    */
     let channelListTarget = channelList.filter(element => element[4] == targetChannelId);
     let channelListSummary = channelListTarget.map(element => [
       element[2], // thumbnail image function
@@ -1238,7 +1239,7 @@ function createYouTubeAnalyticsSummary() {
     videoSheet.getRange(videoSheetRowOffset, videoSheetColOffset, videoListMod.length, videoListMod[0].length)
       .setValues(videoListMod);
     let scriptEnd = new Date();
-    ui.alert(`Report for ${reportMonth} of YouTube channel "${targetChannelName}" created.\nScript Time: ${(scriptEnd.getTime() - now.getTime()) / 1000} secs.`);
+    ui.alert(localizedMessages.replaceReportCreated(reportMonth, targetChannelName, (scriptEnd.getTime() - now.getTime()) / 1000));
   } catch (error) {
     ui.alert(errorMessage_(error));
   }
