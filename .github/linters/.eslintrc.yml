@@ -34,7 +34,7 @@ parserOptions:
 ###########
 extends:
   - 'eslint:recommended'
-  - 'google'
+  - 'eslint-config-google'
 plugins:
   - '@typescript-eslint'
 
