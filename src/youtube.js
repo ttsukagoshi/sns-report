@@ -146,22 +146,21 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     // Get list of channel(s)
     let channelListFull = youtubeMyChannelList_();
     // Extract data for copying into spreadsheet
-    let channelList = channelListFull.map(
-      function (element, index) {
-        let num = index + 1;
-        let thumbnailUrl = element.snippet.thumbnails.default.url;
-        let thumbnailUrlFunction = `=image("${thumbnailUrl}")`; // For using the image function on spreadsheet
-        let id = element.id;
-        let title = element.snippet.title;
-        let description = element.snippet.description;
-        let publishedAt = element.snippet.publishedAt;
-        let publishedAtLocal = formattedDate_(new Date(publishedAt), timeZone);
-        let viewCount = element.statistics.viewCount;
-        let subscriberCount = element.statistics.subscriberCount;
-        let videoCount = element.statistics.videoCount;
-        let timestamp = formattedDate_(now, timeZone);
-        return [timestamp, num, thumbnailUrlFunction, thumbnailUrl, id, title, description, publishedAt, publishedAtLocal, viewCount, subscriberCount, videoCount];
-      }
+    let channelList = channelListFull.map((element, index) => {
+      let num = index + 1;
+      let thumbnailUrl = element.snippet.thumbnails.default.url;
+      let thumbnailUrlFunction = `=image("${thumbnailUrl}")`; // For using the image function on spreadsheet
+      let id = element.id;
+      let title = element.snippet.title;
+      let description = element.snippet.description;
+      let publishedAt = element.snippet.publishedAt;
+      let publishedAtLocal = formattedDate_(new Date(publishedAt), timeZone);
+      let viewCount = element.statistics.viewCount;
+      let subscriberCount = element.statistics.subscriberCount;
+      let videoCount = element.statistics.videoCount;
+      let timestamp = formattedDate_(now, timeZone);
+      return [timestamp, num, thumbnailUrlFunction, thumbnailUrl, id, title, description, publishedAt, publishedAtLocal, viewCount, subscriberCount, videoCount];
+    }
     );
     // Set the text values into spreadsheets (summary and individual)
     //// Renew channel list of summary spreadsheet
@@ -208,52 +207,50 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
     // Get list of channel(s)
     let videoListFull = youtubeMyVideoList_();
     // Extract data for copying into spreadsheet
-    let videoList = videoListFull.map(
-      function (element, index) {
-        let num = index + 1;
-        let thumbnailUrl = element.snippet.thumbnails.high.url;
-        let thumbnailUrlFunction = `=image("${thumbnailUrl}")`; // For using the image function on spreadsheet
-        let channelId = element.snippet.channelId;
-        let channelTitle = element.snippet.channelTitle;
-        let videoId = element.id.videoId;
-        let title = element.snippet.title;
-        let description = element.snippet.description;
-        let videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-        let publishedAt = element.snippet.publishedAt;
-        let publishedAtLocal = formattedDate_(new Date(publishedAt), timeZone);
-        let timestamp = formattedDate_(now, timeZone);
-        // Statistics and status of each video
-        let videoStats = youtubeVideos_([videoId], false)[0];
-        let duration = videoStats.contentDetails.duration;
-        let caption = videoStats.contentDetails.caption
-        let privacyStatus = videoStats.status.privacyStatus;
-        let viewCount = videoStats.statistics.viewCount;
-        let likeCount = videoStats.statistics.likeCount;
-        let dislikeCount = videoStats.statistics.dislikeCount;
-        // List elements to copy to spreadsheet
-        let videoListElement = [
-          timestamp,
-          num,
-          thumbnailUrlFunction,
-          thumbnailUrl,
-          channelId,
-          channelTitle,
-          videoId,
-          title,
-          description,
-          videoUrl,
-          duration,
-          caption,
-          publishedAt,
-          publishedAtLocal,
-          privacyStatus,
-          viewCount,
-          likeCount,
-          dislikeCount
-        ];
-        return videoListElement;
-      }
-    );
+    let videoList = videoListFull.map((element, index) => {
+      let num = index + 1;
+      let thumbnailUrl = element.snippet.thumbnails.high.url;
+      let thumbnailUrlFunction = `=image("${thumbnailUrl}")`; // For using the image function on spreadsheet
+      let channelId = element.snippet.channelId;
+      let channelTitle = element.snippet.channelTitle;
+      let videoId = element.id.videoId;
+      let title = element.snippet.title;
+      let description = element.snippet.description;
+      let videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      let publishedAt = element.snippet.publishedAt;
+      let publishedAtLocal = formattedDate_(new Date(publishedAt), timeZone);
+      let timestamp = formattedDate_(now, timeZone);
+      // Statistics and status of each video
+      let videoStats = youtubeVideos_([videoId], false)[0];
+      let duration = videoStats.contentDetails.duration;
+      let caption = videoStats.contentDetails.caption
+      let privacyStatus = videoStats.status.privacyStatus;
+      let viewCount = videoStats.statistics.viewCount;
+      let likeCount = videoStats.statistics.likeCount;
+      let dislikeCount = videoStats.statistics.dislikeCount;
+      // List elements to copy to spreadsheet
+      let videoListElement = [
+        timestamp,
+        num,
+        thumbnailUrlFunction,
+        thumbnailUrl,
+        channelId,
+        channelTitle,
+        videoId,
+        title,
+        description,
+        videoUrl,
+        duration,
+        caption,
+        publishedAt,
+        publishedAtLocal,
+        privacyStatus,
+        viewCount,
+        likeCount,
+        dislikeCount
+      ];
+      return videoListElement;
+    });
     // Set the text values into spreadsheets (summary and individual)
     //// Renew channel list of summary spreadsheet
     let myVideosSheet = ss.getSheetByName(config.SHEET_NAME_MY_VIDEOS);
