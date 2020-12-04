@@ -31,45 +31,179 @@
 // See https://github.com/gsuitedevs/apps-script-oauth2
 
 const LOG_SHEET_NAME = '99_Log';
+const GITHUB_URL = 'https://github.com/ttsukagoshi/sns-report';
+const MESSAGE = {
+  'en_US': {
+    'general': {
+      'index': {
+        'authorize': 'Authorize',
+        'logoutReset': 'Logout/Reset',
+        'updateChannelVideoList': 'Update Channel/Video List',
+        'updateAll': 'Update All',
+        'updateChannelList': 'Update Channel List',
+        'updateVideoList': 'Update Video List',
+        'analytics': 'Analytics',
+        'getLatestData': 'Get Latest Data',
+        'createAnalyticsSummary': 'Create Analytics Summary',
+        'updatePageList': 'Update Page List',
+        'settings': 'Settings',
+        'setup': 'Setup',
+        'checkSettings': 'Check Settings'
+      },
+      'error': {
+        'errorTitle': 'Error',
+        'errorMailSubject': '[SNS Report] Error Detected',
+        'spreadsheetUrl_': {
+          'templateFileIdIsMissingInOptions': 'The key "templateFileId" is missing in "options".'
+        }
+      },
+      'misc': {
+        'completedTitle': 'Completed'
+      }
+    },
+    'youtube': {
+      'authorizeYouTubeAPI': 'Authorize YouTube Data/Analytics API',
+      'alreadyAuthorized': '[YouTube Data/Analytics API] You are already authorized.',
+      'authorizationSuccessful': '[YouTube Data/Analytics API] Success! You can close this tab.',
+      'authorizationDenied': '[YouTube Data/Analytics API] Denied. You can close this tab',
+      'updatedChannelListLog': 'Success: updated channel list.',
+      'updatedChannelListAlert': 'Updated summary channel list.',
+      'updatedVideoListLog': 'Success: updated video list.',
+      'updatedVideoListAlert': 'Updated summary video list.',
+      'updateYouTubeAnalyticsDataMailTemplate': `This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see ${GITHUB_URL}`,
+      'newYouTubeSpreadsheetCreatedAlert': 'New YouTube spreadsheet created for {{year}}:\n{{url}}',
+      'newYouTubeSpreadsheetCreatedMailSubject': '[SNS Report] New YouTube Spreadsheet Created for {{year}}',
+      'newYouTubeSpreadsheetCreatedMailBody': 'New spreadsheet created to record YouTube analytics data for year {{year}} at:\n{{url}}\n\n',
+      'updatedYouTubeChannelAnalyticsLog': 'Success: updated YouTube channel analytics for {{startDate}} to {{endDate}}.',
+      'noUpdatesForYouTubeChannelAnalyticsLog': 'Success: no updates for YouTube channel analytics.',
+      'updatedYouTubeChannelDemographicsLog': 'Success: updated YouTube channel demographics for {{latestMonth}} to {{thisYearMonth}}.',
+      'updatedYouTubeVideoAnalyticsLog': 'Success: updated YouTube video analytics for {{startDate}} to {{endDate}}.',
+      'noUpdatesForYouTubeVideoAnalyticsLog': 'Success: no updates for YouTube video analytics.',
+      'errorUnauthorized': 'Unauthorized. Get authorized by Menu > YouTube > Authorize',
+      'errorNoTextEnteredForChannelId': 'No text entered for channel ID.',
+      'errorInvalidChannelId': 'Invalid Channel ID: "{{targetChannelId}}".\nMake sure to enter the ID of the YouTube channel that you own.',
+      'errorNoTextEnteredForReportMonth': 'No text entered for report month.',
+      'errorInvalidReportMonth': 'Invalid Report Month: "{{reportMonth}}".\nMake sure the report month is expressed in "yyyy-MM", e.g., enter "2020-03" for getting report for March 2020.',
+      'reportCreated': 'Report for {{reportMonth}} of YouTube channel "{{targetChannelName}}" created.\nScript Time: {{scriptExeTime}} secs.'
+    },
+    'facebook': {
+      'authorizeFacebookAPI': 'Authorize Facebook Graph API',
+      'alreadyAuthorized': '[Facebook API] You are already authorized.',
+      'authorizationSuccessful': '[Facebook API] Success! You can close this tab.',
+      'authorizationDenied': '[Facebook API] Denied. You can close this tab',
+      'errorUnauthorized': 'Unauthorized. Get authorized by Menu > Facebook > Authorize',
+      'updatedPageListLog': 'Success: updated page list.',
+      'updatedPageListAlert': 'Updated summary page list.',
+      'updatedPagePostListLog': 'Success: updated page post list.',
+      'updatedPagePostListAlert': 'Updated page post list.'
+    }
+  },
+  'ja_JP': {
+    'general': {
+      'index': {
+        'authorize': '認証',
+        'logoutReset': 'ログアウト/リセット',
+        'updateChannelVideoList': 'チャンネル/ビデオ一覧を更新',
+        'updateAll': 'すべてを更新',
+        'updateChannelList': 'チャンネル一覧を更新',
+        'updateVideoList': 'ビデオ一覧を更新',
+        'analytics': 'アナリティクス',
+        'getLatestData': '最新データを取得',
+        'createAnalyticsSummary': 'アナリティクスのサマリー作成',
+        'updatePageList': 'ページ一覧を更新',
+        'settings': '設定',
+        'setup': '初期設定',
+        'checkSettings': '設定確認'
+      },
+      'error': {
+        'errorTitle': 'エラー',
+        'errorMailSubject': '[SNS Report] Error Detected',
+        'spreadsheetUrl_': {
+          'templateFileIdIsMissingInOptions': '変数"option"内のキー"templateFileId"が指定されていません。'
+        }
+      },
+      'misc': {
+        'completedTitle': '完了'
+      }
+    },
+    'youtube': {
+      'authorizeYouTubeAPI': 'YouTube Data/Analytics APIを認証',
+      'alreadyAuthorized': '[YouTube Data/Analytics API] すでに認証済みです。',
+      'authorizationSuccessful': '[YouTube Data/Analytics API] 認証成功。このタブを閉じても大丈夫です。',
+      'authorizationDenied': '[YouTube Data/Analytics API] 認証に失敗しました。このタブは閉じてください。',
+      'updatedChannelListLog': 'Success: updated channel list.', // Log message will not be translated.
+      'updatedChannelListAlert': 'チャンネル一覧を更新完了。',
+      'updatedVideoListLog': 'Success: updated video list.', // Log message will not be translated.
+      'updatedVideoListAlert': 'ビデオ一覧を更新完了。',
+      'updateYouTubeAnalyticsDataMailTemplate': `This is an automatic mail that can be stopped or modified at:\n{{spreadsheetUrl}}\n\nFor more information on the Google Apps Script behind the spreadsheet, see ${GITHUB_URL}`,
+      'newYouTubeSpreadsheetCreatedAlert': 'New YouTube spreadsheet created for {{year}}:\n{{url}}',
+      'newYouTubeSpreadsheetCreatedMailSubject': '[SNS Report] New YouTube Spreadsheet Created for {{year}}',
+      'newYouTubeSpreadsheetCreatedMailBody': 'New spreadsheet created to record YouTube analytics data for year {{year}} at:\n{{url}}\n\n',
+      'updatedYouTubeChannelAnalyticsLog': 'Success: updated YouTube channel analytics for {{startDate}} to {{endDate}}.', // Log message will not be translated.
+      'noUpdatesForYouTubeChannelAnalyticsLog': 'Success: no updates for YouTube channel analytics.', // Log message will not be translated.
+      'updatedYouTubeChannelDemographicsLog': 'Success: updated YouTube channel demographics for {{latestMonth}} to {{thisYearMonth}}.', // Log message will not be translated.
+      'updatedYouTubeVideoAnalyticsLog': 'Success: updated YouTube video analytics for {{startDate}} to {{endDate}}.', // Log message will not be translated.
+      'noUpdatesForYouTubeVideoAnalyticsLog': 'Success: no updates for YouTube video analytics.', // Log message will not be translated.
+      'errorUnauthorized': 'Unauthorized. Get authorized by Menu > YouTube > Authorize',
+      'errorNoTextEnteredForChannelId': 'No text entered for channel ID.',
+      'errorInvalidChannelId': 'Invalid Channel ID: "{{targetChannelId}}".\nMake sure to enter the ID of the YouTube channel that you own.',
+      'errorNoTextEnteredForReportMonth': 'No text entered for report month.',
+      'errorInvalidReportMonth': 'Invalid Report Month: "{{reportMonth}}".\nMake sure the report month is expressed in "yyyy-MM", e.g., enter "2020-03" for getting report for March 2020.',
+      'reportCreated': 'Report for {{reportMonth}} of YouTube channel "{{targetChannelName}}" created.\nScript Time: {{scriptExeTime}} secs.'
+    },
+    'facebook': {
+      'authorizeFacebookAPI': 'Facebook Graph APIを認証',
+      'alreadyAuthorized': '[Facebook API] すでに認証済みです。',
+      'authorizationSuccessful': '[Facebook API] 認証成功。このタブを閉じても大丈夫です。',
+      'authorizationDenied': '[Facebook API] 認証に失敗しました。このタブは閉じてください。',
+      'errorUnauthorized': 'Unauthorized. Get authorized by Menu > Facebook > Authorize',
+      'updatedPageListLog': 'Success: updated page list.', // Log message will not be translated.
+      'updatedPageListAlert': 'Updated summary page list.',
+      'updatedPagePostListLog': 'Success: updated page post list.', // Log message will not be translated.
+      'updatedPagePostListAlert': 'Updated page post list.'
+    }
+  }
+};
 
 /**
  * onOpen()
  * Add menu to spreadsheet
  */
 function onOpen() {
-  let ui = SpreadsheetApp.getUi();
+  var ui = SpreadsheetApp.getUi();
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale()); // See locale.js for the list of localized messages
   ui.createMenu('YouTube')
-    .addItem('Authorize', 'showSidebarYouTubeApi')
-    .addItem('Logout/Reset', 'logoutYouTube')
+    .addItem(localizedMessages.messageList.general.index.authorize, 'showSidebarYouTubeApi')
+    .addItem(localizedMessages.messageList.general.index.logoutReset, 'logoutYouTube')
     .addSeparator()
     .addSubMenu(
-      ui.createMenu('Update Channel/Video List')
-        .addItem('Update All', 'updateAllYouTubeList')
+      ui.createMenu(localizedMessages.messageList.general.index.updateChannelVideoList)
+        .addItem(localizedMessages.messageList.general.index.updateAll, 'updateAllYouTubeList')
         .addSeparator()
-        .addItem('Update Channel List', 'updateYouTubeSummaryChannelList')
-        .addItem('Update Video List', 'updateYouTubeSummaryVideoList')
+        .addItem(localizedMessages.messageList.general.index.updateChannelList, 'updateYouTubeSummaryChannelList')
+        .addItem(localizedMessages.messageList.general.index.updateVideoList, 'updateYouTubeSummaryVideoList')
     )
     .addSubMenu(
-      ui.createMenu('Analytics')
-        .addItem('Get Latest Data', 'updateYouTubeAnalyticsData')
+      ui.createMenu(localizedMessages.messageList.general.index.analytics)
+        .addItem(localizedMessages.messageList.general.index.getLatestData, 'updateYouTubeAnalyticsData')
     )
     .addSeparator()
-    .addItem('Create Analytics Summary', 'createYouTubeAnalyticsSummary')
+    .addItem(localizedMessages.messageList.general.index.createAnalyticsSummary, 'createYouTubeAnalyticsSummary')
     .addToUi();
   ui.createMenu('Facebook')
-    .addItem('Authorize', 'showSidebarFacebookApi')
-    .addItem('Logout/Reset', 'logoutFacebook')
+    .addItem(localizedMessages.messageList.general.index.authorize, 'showSidebarFacebookApi')
+    .addItem(localizedMessages.messageList.general.index.logoutReset, 'logoutFacebook')
     .addSeparator()
     .addSubMenu(
-      ui.createMenu('Update Page List')
-        .addItem('Update All', 'updateAllFbList')
+      ui.createMenu(localizedMessages.messageList.general.index.updatePageList)
+        .addItem(localizedMessages.messageList.general.index.updateAll, 'updateAllFbList')
         .addSeparator()
-        .addItem('Update Page List', 'updateFbSummaryPageList')
+        .addItem(localizedMessages.messageList.general.index.updatePageList, 'updateFbSummaryPageList')
     )
     .addToUi();
-  ui.createMenu('Settings')
-    .addItem('Setup', 'initialSettings')
-    .addItem('Check Settings', 'checkSettings')
+  ui.createMenu(localizedMessages.messageList.general.index.settings)
+    .addItem(localizedMessages.messageList.general.index.setup, 'initialSettings')
+    .addItem(localizedMessages.messageList.general.index.checkSettings, 'checkSettings')
     .addToUi();
   ui.createMenu('test')/////////////////////////////////////////////////////
     .addItem('test', 'test')
@@ -77,9 +211,9 @@ function onOpen() {
     .addToUi()
 }
 
-/////////////////////////////
-// Configurations and Misc //
-/////////////////////////////
+//////////////////////
+// Common Functions //
+//////////////////////
 
 /**
  * Standarized error message
@@ -168,6 +302,7 @@ function checkYear_(dateString, checkYear, timeZone = Session.getScriptTimeZone(
  * {boolean} created - True when a new spreadsheet is created.
  */
 function spreadsheetUrl_(spreadsheetListName, targetYear, platform, options = {}) {
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale()); // See locale.js for the list of localized messages
   var optionsDefault = {
     createNewFile: false,
     driveFolderId: '',
@@ -201,13 +336,12 @@ function spreadsheetUrl_(spreadsheetListName, targetYear, platform, options = {}
       enterLog_(SpreadsheetApp.openByUrl(newFileUrl).getId(), LOG_SHEET_NAME, 'Spreadsheet created.');
       return { 'url': newFileUrl, 'created': true };
     } else if (options.createNewFile && !options.templateFileId) {
-      throw new Error('The key "templateFileId" is missing in "options".');
+      throw new Error(localizedMessages.messageList.general.error.spreadsheetUrl_.templateFileIdIsMissingInOptions);
     } else {
       return { 'url': null, 'created': false };
     }
   } catch (error) {
-    let message = errorMessage_(error);
-    throw new Error(message);
+    throw error;
   }
 }
 

@@ -134,9 +134,10 @@ function authCallbackFacebookAPI_(request) {
  */
 function getFbGraphData(node, edge = '', fields = []) {
   var facebookAPIService = getFacebookAPIService_();
+  var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale());
   try {
     if (!facebookAPIService.hasAccess()) {
-      throw new Error('Unauthorized. Get authorized by Menu > Facebook > Authorize');
+      throw new Error(localizedMessages.messageList.facebook.errorUnauthorized);
     }
     let baseUrl = `https://graph.facebook.com/${FB_API_VERSION}/${node}`;
     if (edge) {
@@ -208,6 +209,7 @@ function updateFbSummaryPageList(muteUiAlert = false) {
   var config = getConfig_();
   var fbCurrentYear = parseInt(scriptProperties.fbCurrentYear);
   var now = new Date();
+  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   // Getting the target spreadsheet
   var spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
   var options = {
@@ -276,16 +278,16 @@ function updateFbSummaryPageList(muteUiAlert = false) {
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, pageList.length, pageList[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
       .setValues(pageList);
     // Log & Notify
-    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, 'Success: updated page list.', now);
+    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, localizedMessages.messageList.facebook.updatedPageListLog, now);
     if (!muteUiAlert) {
-      ui.alert('Completed', 'Updated summary page list.', ui.ButtonSet.OK);
+      ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.facebook.updatedPageListAlert, ui.ButtonSet.OK);
     }
     return pageList;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, message, now);
     if (!muteUiAlert) {
-      ui.alert('Error', message, ui.ButtonSet.OK);
+      ui.alert(localizedMessages.messageList.general.error.errorTitle, message, ui.ButtonSet.OK);
     }
     return null;
   }
@@ -308,6 +310,7 @@ function updateFbPagePostList(muteUiAlert = false) {
   var config = getConfig_();
   var fbCurrentYear = parseInt(scriptProperties.fbCurrentYear);
   var now = new Date();
+  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   // Getting the target spreadsheet
   var spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
   var options = {
@@ -357,6 +360,7 @@ function updateFbPagePostList(muteUiAlert = false) {
         let postId = post.id;
         let postPermalink_url = post.permalink_url;
         let postCreatedTime = post.created_time;
+        let postBackdatedTime = post.backdated_time || 'NA';
         let postPlace = post.place || {'name': 'NA', 'id': 'NA'};
         let postPlaceName = postPlace.name;
         let postPlaceId = postPlace.id;
@@ -367,6 +371,7 @@ function updateFbPagePostList(muteUiAlert = false) {
           postId,
           postPermalink_url,
           postCreatedTime,
+          postBackdatedTime,
           postPlaceName,
           postPlaceId,
           postPictureUrl,
@@ -384,16 +389,16 @@ function updateFbPagePostList(muteUiAlert = false) {
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, postListSS.length, postListSS[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
       .setValues(postListSS);
     // Log & Notify
-    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, 'Success: updated page post list.', now);
+    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, localizedMessages.messageList.facebook.updatedPagePostListLog, now);
     if (!muteUiAlert) {
-      ui.alert('Completed', 'Updated page post list.', ui.ButtonSet.OK);
+      ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.facebook.updatedPagePostListAlert, ui.ButtonSet.OK);
     }
     return postListSS;
   } catch (error) {
     let message = errorMessage_(error);
     enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, message, now);
     if (!muteUiAlert) {
-      ui.alert('Error', message, ui.ButtonSet.OK);
+      ui.alert(localizedMessages.messageList.general.error.errorTitle, message, ui.ButtonSet.OK);
     }
     return null;
   }
