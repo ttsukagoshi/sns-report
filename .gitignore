@@ -7,3 +7,6 @@ creds.json
 # old/test files
 src/archive/*
 src/_test.js
+
+# Pending development
+src/locale.js

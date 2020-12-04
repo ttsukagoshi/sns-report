@@ -1,3 +1,5 @@
+.github/*
 src/archive/*
 src/_OAuth2.js
 creds.json
+.clasprc.json

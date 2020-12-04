@@ -11,3 +11,5 @@ FYI:
 
 ## Facebook
 in development
+### Overview of Facebook Graph API Fields and Metrics Used by this App
+See [DOC_Overview of Facebook Graph API Fields and Metrics used by SNS Reporting App](https://docs.google.com/spreadsheets/d/1ojfVJh2gfDJTY7vDxOE0zF6oVnIO9sNh2PTHYPv7Drg/edit#gid=0).
