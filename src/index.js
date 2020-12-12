@@ -20,16 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Dependencies on the manifest file 'appsscript.json'
-// "dependencies": {
-//   "libraries": [{
-//     "userSymbol": "OAuth2",
-//     "libraryId": "1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF",
-//     "version": "38"
-//   }]
-// }
-// See https://github.com/gsuitedevs/apps-script-oauth2
-
 const LOG_SHEET_NAME = '99_Log';
 const GITHUB_URL = 'https://github.com/ttsukagoshi/sns-report';
 const MESSAGE = {
