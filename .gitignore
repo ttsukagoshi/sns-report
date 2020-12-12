@@ -1,12 +1,9 @@
 # clasp
 .clasp.json
-appsscript.json
 creds.json
 .clasprc.json
 
-# old/test files
+# old/test/misc files
 src/archive/*
 src/_test.js
-
-# Pending development
-src/locale.js
+.DS_Store
