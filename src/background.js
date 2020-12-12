@@ -1,3 +1,6 @@
+/* exported weeklyAnalyticsUpdate */
+/* global updateYouTubeAnalyticsData */
+
 // MIT License
 // 
 // Copyright (c) 2020 Taro TSUKAGOSHI
