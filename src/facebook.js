@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-/* exported authCallbackFacebookAPI_, logoutFacebook, showSidebarFacebookApi */
-/* global checkYear_, enterLog_, errorMessage_, formattedDate_, getConfig_, LocalizedMessage, LOG_SHEET_NAME, OAuth2, spreadsheetUrl_, updateAllFbList, updateFbPagePostList */
+/* exported authCallbackFacebookAPI_, logoutFacebook, showSidebarFacebookApi, updateAllFbList, updateFbPagePostList */
+/* global checkYear_, enterLog_, errorMessage_, formattedDate_, getConfig_, LocalizedMessage, LOG_SHEET_NAME, OAuth2, spreadsheetUrl_ */
 
 // Facebook Graph API version to be used
 const FB_API_VERSION = 'v8.0';
