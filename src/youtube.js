@@ -20,6 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/* exported authCallbackYouTubeAPI_, createYouTubeAnalyticsSummary, logoutYouTube, showSidebarYouTubeApi, updateAllYouTubeList, updateYouTubeAnalyticsData */
+/* global enterLog_, errorMessage_, formattedDate_, getConfig_, getSpreadsheetList_, LocalizedMessage, LOG_SHEET_NAME, OAuth2, spreadsheetUrl_ */
+
 // API versions
 const YOUTUBE_DATA_API_VERSION = 'v3';
 const YOUTUBE_ANALYTICS_API_VERSION = 'v2';
@@ -56,7 +59,7 @@ function showSidebarYouTubeApi() {
  * https://github.com/gsuitedevs/apps-script-oauth2#logout
  */
 function logoutYouTube() {
-  var service = getYouTubeAPIService_()
+  var service = getYouTubeAPIService_();
   service.reset();
 }
 
@@ -176,14 +179,14 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
       .setValues(channelList);
     // Log & Notify
-    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, localizedMessages.messageList.youtube.updatedChannelListLog, now)
+    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, localizedMessages.messageList.youtube.updatedChannelListLog, now);
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.youtube.updatedChannelListAlert, ui.ButtonSet.OK);
     }
     return channelList;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, message, now)
+    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, message, now);
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.error.errorTitle, message, ui.ButtonSet.OK);
     }
@@ -223,7 +226,7 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
       // Statistics and status of each video
       let videoStats = youtubeVideos_([videoId], false)[0];
       let duration = videoStats.contentDetails.duration;
-      let caption = videoStats.contentDetails.caption
+      let caption = videoStats.contentDetails.caption;
       let privacyStatus = videoStats.status.privacyStatus;
       let viewCount = videoStats.statistics.viewCount;
       let likeCount = videoStats.statistics.likeCount;
@@ -291,27 +294,23 @@ function youtubeMyChannelList_() {
     part: 'snippet,statistics',
     mine: true
   };
-  try {
-    var channelList = JSON.parse(youtubeData_('channels', channelParameters));
-    if (channelList.nextPageToken) {
-      let nextChannelList = {};
-      nextChannelList['nextPageToken'] = channelList.nextPageToken;
-      while (nextChannelList.nextPageToken) {
-        let nextChannelParameters = {};
-        nextChannelParameters = {
-          part: 'snippet, statistics',
-          mine: true,
-          pageToken: nextChannelList.nextPageToken
-        };
-        nextChannelList = {};
-        nextChannelList = JSON.parse(youtubeData_('channels', nextChannelParameters));
-        nextChannelList.items.forEach(value => channelList.items.push(value));
-      }
+  var channelList = JSON.parse(youtubeData_('channels', channelParameters));
+  if (channelList.nextPageToken) {
+    let nextChannelList = {};
+    nextChannelList['nextPageToken'] = channelList.nextPageToken;
+    while (nextChannelList.nextPageToken) {
+      let nextChannelParameters = {};
+      nextChannelParameters = {
+        part: 'snippet, statistics',
+        mine: true,
+        pageToken: nextChannelList.nextPageToken
+      };
+      nextChannelList = {};
+      nextChannelList = JSON.parse(youtubeData_('channels', nextChannelParameters));
+      nextChannelList.items.forEach(value => channelList.items.push(value));
     }
-    return channelList.items;
-  } catch (error) {
-    throw error;
   }
+  return channelList.items;
 }
 
 /**
@@ -325,28 +324,24 @@ function youtubeMyVideoList_() {
     forMine: true,
     type: 'video'
   };
-  try {
-    var videoList = JSON.parse(youtubeData_('search', videoParameters));
-    if (videoList.nextPageToken) {
-      let nextVideoList = {};
-      nextVideoList['nextPageToken'] = videoList.nextPageToken;
-      while (nextVideoList.nextPageToken) {
-        let nextParameters = {};
-        nextParameters = {
-          part: 'snippet',
-          forMine: true,
-          type: 'video',
-          pageToken: nextVideoList.nextPageToken
-        };
-        nextVideoList = {};
-        nextVideoList = JSON.parse(youtubeData_('search', nextParameters));
-        nextVideoList.items.forEach(value => videoList.items.push(value));
-      }
+  var videoList = JSON.parse(youtubeData_('search', videoParameters));
+  if (videoList.nextPageToken) {
+    let nextVideoList = {};
+    nextVideoList['nextPageToken'] = videoList.nextPageToken;
+    while (nextVideoList.nextPageToken) {
+      let nextParameters = {};
+      nextParameters = {
+        part: 'snippet',
+        forMine: true,
+        type: 'video',
+        pageToken: nextVideoList.nextPageToken
+      };
+      nextVideoList = {};
+      nextVideoList = JSON.parse(youtubeData_('search', nextParameters));
+      nextVideoList.items.forEach(value => videoList.items.push(value));
     }
-    return videoList.items;
-  } catch (error) {
-    throw error;
   }
+  return videoList.items;
 }
 
 /**
@@ -357,33 +352,31 @@ function youtubeMyVideoList_() {
  * @param {boolean} getDetails [Optional] Gets the snippet of the YouTube channel(s) as well as its status and statistics. Defaults to false.
  * @returns {array} Array of Javascript objects of channel properties. 
  */
+/*
 function youtubeChannels_(channelIds, getDetails = false) {
   var channelParameters = {
     part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
     id: channelIds.join()
   };
-  try {
-    var channelDetails = JSON.parse(youtubeData_('channels', channelParameters));
-    if (channelDetails.nextPageToken) {
-      let nextChannelDetails = {};
-      nextChannelDetails['nextPageToken'] = nextChannelDetails.nextPageToken;
-      while (nextChannelDetails.nextPageToken) {
-        let nextParameters = {};
-        nextParameters = {
-          part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
-          id: channelIds.join(),
-          pageToken: nextChannelDetails.nextPageToken
-        };
-        nextChannelDetails = {};
-        nextChannelDetails = JSON.parse(youtubeData_('channels', nextParameters));
-        nextChannelDetails.items.forEach(value => channelDetails.items.push(value));
-      }
+  var channelDetails = JSON.parse(youtubeData_('channels', channelParameters));
+  if (channelDetails.nextPageToken) {
+    let nextChannelDetails = {};
+    nextChannelDetails['nextPageToken'] = channelDetails.nextPageToken;
+    while (nextChannelDetails.nextPageToken) {
+      let nextParameters = {};
+      nextParameters = {
+        part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
+        id: channelIds.join(),
+        pageToken: nextChannelDetails.nextPageToken
+      };
+      nextChannelDetails = {};
+      nextChannelDetails = JSON.parse(youtubeData_('channels', nextParameters));
+      nextChannelDetails.items.forEach(value => channelDetails.items.push(value));
     }
-    return channelDetails.items;
-  } catch (error) {
-    throw error;
   }
+  return channelDetails.items;
 }
+*/
 
 /**
  * Get the details of specific YouTube video(s).
@@ -398,27 +391,23 @@ function youtubeVideos_(videoIds, getDetails = false) {
     part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
     id: videoIds.join()
   };
-  try {
-    var videoDetails = JSON.parse(youtubeData_('videos', videoParameters));
-    if (videoDetails.nextPageToken) {
-      let nextVideoDetails = {};
-      nextVideoDetails['nextPageToken'] = videoDetails.nextPageToken;
-      while (nextVideoDetails.nextPageToken) {
-        let nextParameters = {};
-        nextParameters = {
-          part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
-          id: videoIds.join(),
-          pageToken: nextVideoList.nextPageToken
-        };
-        nextVideoDetails = {};
-        nextVideoDetails = JSON.parse(youtubeData_('videos', nextParameters));
-        nextVideoDetails.items.forEach(value => videoDetails.items.push(value));
-      }
+  var videoDetails = JSON.parse(youtubeData_('videos', videoParameters));
+  if (videoDetails.nextPageToken) {
+    let nextVideoDetails = {};
+    nextVideoDetails['nextPageToken'] = videoDetails.nextPageToken;
+    while (nextVideoDetails.nextPageToken) {
+      let nextParameters = {};
+      nextParameters = {
+        part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
+        id: videoIds.join(),
+        pageToken: nextVideoDetails.nextPageToken
+      };
+      nextVideoDetails = {};
+      nextVideoDetails = JSON.parse(youtubeData_('videos', nextParameters));
+      nextVideoDetails.items.forEach(value => videoDetails.items.push(value));
     }
-    return videoDetails.items;
-  } catch (error) {
-    throw error;
   }
+  return videoDetails.items;
 }
 
 /**
@@ -429,31 +418,27 @@ function youtubeVideos_(videoIds, getDetails = false) {
  */
 function youtubeData_(resourceType, parameters) {
   var youtubeAPIService = getYouTubeAPIService_();
-  try {
-    if (!youtubeAPIService.hasAccess()) {
-      throw new Error('Unauthorized. Get authorized by Menu > YouTube > Authorize');
-    }
-    let baseUrl = `https://www.googleapis.com/youtube/${YOUTUBE_DATA_API_VERSION}/${resourceType}`;
-    let paramString = '?';
-    for (let k in parameters) {
-      let param = `${k}=${encodeURIComponent(parameters[k])}`;
-      if (paramString.slice(-1) !== '?') {
-        param = '&' + param;
-      }
-      paramString += param;
-    }
-    let url = baseUrl + paramString;
-    let response = UrlFetchApp.fetch(url, {
-      method: 'GET',
-      contentType: 'application/json; charset=UTF-8',
-      headers: {
-        Authorization: 'Bearer ' + encodeURIComponent(youtubeAPIService.getAccessToken())
-      }
-    });
-    return response;
-  } catch (error) {
-    throw error;
+  if (!youtubeAPIService.hasAccess()) {
+    throw new Error('Unauthorized. Get authorized by Menu > YouTube > Authorize');
   }
+  let baseUrl = `https://www.googleapis.com/youtube/${YOUTUBE_DATA_API_VERSION}/${resourceType}`;
+  let paramString = '?';
+  for (let k in parameters) {
+    let param = `${k}=${encodeURIComponent(parameters[k])}`;
+    if (paramString.slice(-1) !== '?') {
+      param = '&' + param;
+    }
+    paramString += param;
+  }
+  let url = baseUrl + paramString;
+  let response = UrlFetchApp.fetch(url, {
+    method: 'GET',
+    contentType: 'application/json; charset=UTF-8',
+    headers: {
+      Authorization: 'Bearer ' + encodeURIComponent(youtubeAPIService.getAccessToken())
+    }
+  });
+  return response;
 }
 
 ///////////////
@@ -558,7 +543,7 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
     // latestDate will be Dec 31 of the previous year of targetYear
     let currentLatestOnSpreadsheet = getLatestDate_(targetSheet, 1); // Assuming that the date is recorded on column A of the targetSheet.
     let latestDate = (currentLatestOnSpreadsheet ? new Date(currentLatestOnSpreadsheet.getTime()) : new Date(targetYear - 1, 11, 31));
-    startDateObj = new Date(latestDate.setDate(latestDate.getDate() + 1));
+    let startDateObj = new Date(latestDate.setDate(latestDate.getDate() + 1));
     // Setting parameters for youtubeAnalyticsReportsQuery_()
     let startDate = formattedDateAnalytics_(startDateObj);
     let endDateObj = new Date(now.getTime());
@@ -814,32 +799,28 @@ function youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids = 'chann
       parameters[k] = options[k];
     }
   }
-  try {
-    let youtubeAPIService = getYouTubeAPIService_();
-    if (!youtubeAPIService.hasAccess()) {
-      throw new Error(localizedMessages.messageList.youtube.errorUnauthorized);
-    }
-    let baseUrl = `https://youtubeanalytics.googleapis.com/${YOUTUBE_ANALYTICS_API_VERSION}/reports`;
-    let paramString = '?';
-    for (let k in parameters) {
-      let param = `${k}=${encodeURIComponent(parameters[k])}`;
-      if (paramString.slice(-1) !== '?') {
-        param = '&' + param;
-      }
-      paramString += param;
-    }
-    let url = baseUrl + paramString;
-    let response = UrlFetchApp.fetch(url, {
-      method: 'GET',
-      contentType: 'application/json; charset=UTF-8',
-      headers: {
-        Authorization: 'Bearer ' + encodeURIComponent(youtubeAPIService.getAccessToken())
-      }
-    });
-    return response;
-  } catch (error) {
-    throw error;
+  var youtubeAPIService = getYouTubeAPIService_();
+  if (!youtubeAPIService.hasAccess()) {
+    throw new Error(localizedMessages.messageList.youtube.errorUnauthorized);
   }
+  var baseUrl = `https://youtubeanalytics.googleapis.com/${YOUTUBE_ANALYTICS_API_VERSION}/reports`;
+  var paramString = '?';
+  for (let k in parameters) {
+    let param = `${k}=${encodeURIComponent(parameters[k])}`;
+    if (paramString.slice(-1) !== '?') {
+      param = '&' + param;
+    }
+    paramString += param;
+  }
+  var url = baseUrl + paramString;
+  var response = UrlFetchApp.fetch(url, {
+    method: 'GET',
+    contentType: 'application/json; charset=UTF-8',
+    headers: {
+      Authorization: 'Bearer ' + encodeURIComponent(youtubeAPIService.getAccessToken())
+    }
+  });
+  return response;
 }
 
 //////////////////////////////
@@ -870,7 +851,7 @@ function createYouTubeAnalyticsSummary() {
     if (!targetChannelId) {
       throw new Error(localizedMessages.messageList.youtube.errorNoTextEnteredForChannelId);
     } else if (!myChannelIds.includes(targetChannelId)) {
-      throw new Error(localizedMessages.replaceErrorInvalidChannelId(targetChannelId))
+      throw new Error(localizedMessages.replaceErrorInvalidChannelId(targetChannelId));
     }
     let targetChannelName = myChannelListFull.filter(element => element.id == targetChannelId)[0].snippet.title;
     // Report month
@@ -1183,6 +1164,7 @@ function createYouTubeAnalyticsSummary() {
         }
       }
       let elementMod = [
+        // channelId, channelName, 
         num,
         thumbnailUrlFunction,
         thumbnailUrl,
