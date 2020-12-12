@@ -20,6 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/* exported checkYear_, errorMessage_, getConfig_, MESSAGE, onOpen, spreadsheetUrl_ */
+/* global LocalizedMessage */
+
 const LOG_SHEET_NAME = '99_Log';
 const GITHUB_URL = 'https://github.com/ttsukagoshi/sns-report';
 const MESSAGE = {
@@ -198,7 +201,7 @@ function onOpen() {
   ui.createMenu('test')/////////////////////////////////////////////////////
     .addItem('test', 'test')
     .addItem('catchup', 'archiveCatchup')
-    .addToUi()
+    .addToUi();
 }
 
 //////////////////////
@@ -211,7 +214,7 @@ function onOpen() {
  * @return {string} Standarized error message
  */
 function errorMessage_(e) {
-  let message = `Error: line - ${e.lineNumber}\n${e.stack}`
+  let message = `Error: line - ${e.lineNumber}\n${e.stack}`;
   return message;
 }
 
@@ -308,30 +311,26 @@ function spreadsheetUrl_(spreadsheetListName, targetYear, platform, options = {}
   }
   var spreadsheetList = getSpreadsheetList_(spreadsheetListName);
   var targetSpreadsheet = spreadsheetList.filter(value => (value.YEAR == targetYear && value.PLATFORM == platform));
-  try {
-    if (targetSpreadsheet.length) {
-      return { 'url': targetSpreadsheet[0].URL, 'created': false };
-    } else if (options.createNewFile && options.templateFileId) {
-      let targetFolder = (options.driveFolderId ? DriveApp.getFolderById(options.driveFolderId) : DriveApp.getRootFolder());
-      let templateFile = DriveApp.getFileById(options.templateFileId);
-      let newFileName = (options.newFileName ? options.newFileName : templateFile.getName());
-      newFileName = options.newFileNamePrefix + newFileName + options.newFileNameSuffix;
-      // Copy template into designated Drive folder
-      // https://developers.google.com/apps-script/reference/drive/file#makeCopy(String,Folder)
-      let newFileUrl = templateFile.makeCopy(newFileName, targetFolder).getUrl();
-      // Add the new file to the spreadsheet list
-      let newRow = [targetYear, platform, newFileName, newFileUrl];
-      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(spreadsheetListName).appendRow(newRow);
-      // Add log to the new file
-      enterLog_(SpreadsheetApp.openByUrl(newFileUrl).getId(), LOG_SHEET_NAME, 'Spreadsheet created.');
-      return { 'url': newFileUrl, 'created': true };
-    } else if (options.createNewFile && !options.templateFileId) {
-      throw new Error(localizedMessages.messageList.general.error.spreadsheetUrl_.templateFileIdIsMissingInOptions);
-    } else {
-      return { 'url': null, 'created': false };
-    }
-  } catch (error) {
-    throw error;
+  if (targetSpreadsheet.length) {
+    return { 'url': targetSpreadsheet[0].URL, 'created': false };
+  } else if (options.createNewFile && options.templateFileId) {
+    let targetFolder = (options.driveFolderId ? DriveApp.getFolderById(options.driveFolderId) : DriveApp.getRootFolder());
+    let templateFile = DriveApp.getFileById(options.templateFileId);
+    let newFileName = (options.newFileName ? options.newFileName : templateFile.getName());
+    newFileName = options.newFileNamePrefix + newFileName + options.newFileNameSuffix;
+    // Copy template into designated Drive folder
+    // https://developers.google.com/apps-script/reference/drive/file#makeCopy(String,Folder)
+    let newFileUrl = templateFile.makeCopy(newFileName, targetFolder).getUrl();
+    // Add the new file to the spreadsheet list
+    let newRow = [targetYear, platform, newFileName, newFileUrl];
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(spreadsheetListName).appendRow(newRow);
+    // Add log to the new file
+    enterLog_(SpreadsheetApp.openByUrl(newFileUrl).getId(), LOG_SHEET_NAME, 'Spreadsheet created.');
+    return { 'url': newFileUrl, 'created': true };
+  } else if (options.createNewFile && !options.templateFileId) {
+    throw new Error(localizedMessages.messageList.general.error.spreadsheetUrl_.templateFileIdIsMissingInOptions);
+  } else {
+    return { 'url': null, 'created': false };
   }
 }
 
