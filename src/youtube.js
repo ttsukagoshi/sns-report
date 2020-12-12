@@ -345,40 +345,6 @@ function youtubeMyVideoList_() {
 }
 
 /**
- * Get the details of specific YouTube channel(s).
- * Channel properties are described at https://developers.google.com/youtube/v3/docs/channels#resource
- * @param {array} channelIds Array of YouTube channel IDs to retrieve the details.
- * Subject to API quota; bulk request may result in HTTP error 400. See https://developers.google.com/youtube/v3/docs/channels/list#parameters
- * @param {boolean} getDetails [Optional] Gets the snippet of the YouTube channel(s) as well as its status and statistics. Defaults to false.
- * @returns {array} Array of Javascript objects of channel properties. 
- */
-/*
-function youtubeChannels_(channelIds, getDetails = false) {
-  var channelParameters = {
-    part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
-    id: channelIds.join()
-  };
-  var channelDetails = JSON.parse(youtubeData_('channels', channelParameters));
-  if (channelDetails.nextPageToken) {
-    let nextChannelDetails = {};
-    nextChannelDetails['nextPageToken'] = channelDetails.nextPageToken;
-    while (nextChannelDetails.nextPageToken) {
-      let nextParameters = {};
-      nextParameters = {
-        part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
-        id: channelIds.join(),
-        pageToken: nextChannelDetails.nextPageToken
-      };
-      nextChannelDetails = {};
-      nextChannelDetails = JSON.parse(youtubeData_('channels', nextParameters));
-      nextChannelDetails.items.forEach(value => channelDetails.items.push(value));
-    }
-  }
-  return channelDetails.items;
-}
-*/
-
-/**
  * Get the details of specific YouTube video(s).
  * Video properties are described at https://developers.google.com/youtube/v3/docs/videos#resource
  * @param {array} videoIds Array of YouTube video IDs to retrieve the details. 
@@ -1302,17 +1268,6 @@ function yearMonth2Date_(yearMonth) {
 function formattedDateAnalytics_(date, timeZone = Session.getScriptTimeZone()) {
   var dateString = Utilities.formatDate(date, timeZone, 'yyyy-MM-dd');
   return dateString;
-}
-
-/**
- * Set a column of numbers or dates in the designated Google Spreadsheet sheet into text to fix its format.
- * @param {Object} sheet Sheet object of Google Spreadsheet.
- * @param {number} colNum Target column number to set as text. Defaults to 1, i.e., column "A".
- * @returns {Object} The entered sheet object; for chaining.
- */
-function setColumnAsText_(sheet, colNum = 1) {
-  sheet.getRange(1, colNum, sheet.getLastRow(), 1).setNumberFormat('@');
-  return sheet;
 }
 
 /**
