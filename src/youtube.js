@@ -319,13 +319,18 @@ function youtubeMyChannelList_() {
  * @returns {array} Array of Javascript objects of video properties.
  */
 function youtubeMyVideoList_() {
+  console.log('Initiating youtubeMyVideoList_: Getting the list of all video(s) that the authorized user owns...'); // log
   var videoParameters = {
     part: 'snippet',
     forMine: true,
     type: 'video'
   };
-  var videoList = JSON.parse(youtubeData_('search', videoParameters));
+  var videoListString = youtubeData_('search', videoParameters);
+  console.log(`Initial video list retrieved: ${videoListString}`); // log
+  var videoList = JSON.parse(videoListString);
   if (videoList.nextPageToken) {
+    console.log('Next Page Token exists. Retrieving next page...'); // log
+    let nextVideoListString = '';
     let nextVideoList = {};
     nextVideoList['nextPageToken'] = videoList.nextPageToken;
     while (nextVideoList.nextPageToken) {
@@ -336,11 +341,13 @@ function youtubeMyVideoList_() {
         type: 'video',
         pageToken: nextVideoList.nextPageToken
       };
-      nextVideoList = {};
-      nextVideoList = JSON.parse(youtubeData_('search', nextParameters));
+      nextVideoListString = youtubeData_('search', nextParameters);
+      console.log(`Next video list retrieved: ${nextVideoListString}`); // log
+      nextVideoList = JSON.parse(nextVideoListString);
       nextVideoList.items.forEach(value => videoList.items.push(value));
     }
   }
+  console.log('Completed youtubeMyVideoList_'); // log
   return videoList.items;
 }
 
