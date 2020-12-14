@@ -427,15 +427,18 @@ function youtubeData_(resourceType, parameters) {
  * @param {boolean} muteMailNotification [Optional] Mute email notification when true; defaults to true.
  */
 function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = true) {
+  console.log('Initiating updateYouTubeAnalyticsData: Getting the latest analytics data for YouTube channel and videos that the authorized user owns...'); // log
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var myEmail = Session.getActiveUser().getEmail();
   var mailTemplate = localizedMessages.replaceUpdateYouTubeAnalyticsDataMailTemplate(ss.getUrl());
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
   var yearLimit = true;
+  console.log(`UI alert is ${muteUiAlert ? 'muted' : 'not muted'}.\nMail notification is ${muteMailNotification ? 'disabled' : 'enabled'}.`); // log
   try {
     let ytCurrentYear = parseInt(scriptProperties.ytCurrentYear);
     // Get latest data
+    console.log('Retrieving latest YouTube analytics data...'); // log
     let updatedChannelAnalyticsDate = youtubeAnalyticsChannel(ytCurrentYear, yearLimit);
     let updateChannelDemographics = youtubeAnalyticsDemographics(ytCurrentYear, yearLimit);
     let updatedVideoAnalyticsDate = youtubeAnalyticsVideo(ytCurrentYear, yearLimit);
@@ -446,6 +449,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
       && updatedVideoAnalyticsDate.latestDateReturned.getFullYear() > ytCurrentYear
     );
     if (changeOfYear) {
+      console.log('Change of year detected. Checking to see if new files need to be created...'); // log
       let config = getConfig_();
       let spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
       let options = {
@@ -483,6 +487,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
     }
   } catch (error) {
     let message = errorMessage_(error);
+    console.log(message); // log
     if (!muteUiAlert) {
       SpreadsheetApp.getUi().alert(message);
     }

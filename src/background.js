@@ -27,7 +27,9 @@
  * Periodically update analytics data using Google Apps Script's trigger.
  */
 function weeklyAnalyticsUpdate() {
+  console.log('Initiating weeklyAnalyticsUpdate: A periodical task to update analytics data using Google Apps Script\'s trigger...'); // log
   var muteUiAlert = true;
   var muteMailNotification = false;
   updateYouTubeAnalyticsData(muteUiAlert, muteMailNotification);
+  console.log('weeklyAnalyticsUpdate complete: Periodical task to update analytics data using Google Apps Script\'s trigger is complete.'); // log
 }
