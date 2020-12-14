@@ -1004,7 +1004,7 @@ function createYouTubeAnalyticsSummary() {
     // Create modified list of authenticated user's videos with advanced statistics
     let videoListMod = videoList.map(function (element) {
       // Name the values in element
-      let [timestamp, num, thumbnailUrlFunction, thumbnailUrl, channelId, channelName, videoId, videoTitle, videoDesc, videoUrl, duration, caption, publishedAtUtc, publishedAtLocal, privacyStatus, latestViewCount, latestLikeCount, latestDislikeCount] = element;
+      let [timestamp, num, thumbnailUrlFunction, thumbnailUrl, /*channelId*/, /*channelName*/, videoId, videoTitle, videoDesc, videoUrl, duration, caption, publishedAtUtc, publishedAtLocal, privacyStatus, latestViewCount, latestLikeCount, latestDislikeCount] = element;
       let durationSec = iso8601duration2sec_(duration);
       // Key dates for advanced statistics
       let publishedAt = new Date(publishedAtUtc);
