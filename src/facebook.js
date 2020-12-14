@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/* exported authCallbackFacebookAPI_, logoutFacebook, showSidebarFacebookApi, updateAllFbList, updateFbPagePostList */
+/* global checkYear_, enterLog_, errorMessage_, formattedDate_, getConfig_, LocalizedMessage, LOG_SHEET_NAME, OAuth2, spreadsheetUrl_ */
 
 // Facebook Graph API version to be used
 const FB_API_VERSION = 'v8.0';
@@ -47,7 +49,7 @@ function showSidebarFacebookApi() {
   } else {
     let template = HtmlService.createTemplate(
       localizedMessages.messageList.facebook.alreadyAuthorized
-      );
+    );
     let page = template.evaluate();
     SpreadsheetApp.getUi().showSidebar(page);
   }
@@ -57,7 +59,7 @@ function showSidebarFacebookApi() {
  * https://github.com/gsuitedevs/apps-script-oauth2#logout
  */
 function logoutFacebook() {
-  var service = getFacebookAPIService_()
+  var service = getFacebookAPIService_();
   service.reset();
 }
 
@@ -87,7 +89,7 @@ function getFacebookAPIService_() {
     .setPropertyStore(PropertiesService.getUserProperties())
 
     // Set the scopes to request (space-separated for Google services).
-    .setScope('pages_read_engagement pages_show_list pages_read_user_content read_insights business_management')
+    .setScope('pages_read_engagement pages_show_list pages_read_user_content read_insights business_management');
 
   // Below are Google-specific OAuth2 parameters.
   /*
@@ -135,24 +137,20 @@ function authCallbackFacebookAPI_(request) {
 function getFbGraphData(node, edge = '', fields = []) {
   var facebookAPIService = getFacebookAPIService_();
   var localizedMessages = new LocalizedMessage(SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetLocale());
-  try {
-    if (!facebookAPIService.hasAccess()) {
-      throw new Error(localizedMessages.messageList.facebook.errorUnauthorized);
-    }
-    let baseUrl = `https://graph.facebook.com/${FB_API_VERSION}/${node}`;
-    if (edge) {
-      baseUrl += `/${edge}`;
-    }
-    let fieldsUrl = (fields.length ? `&fields=${encodeURIComponent(fields.join())}` : '');
-    let url = `${baseUrl}?access_token=${facebookAPIService.getAccessToken()}${fieldsUrl}`;
-    let response = UrlFetchApp.fetch(url, {
-      method: 'GET',
-      contentType: 'application/json; charset=UTF-8'
-    });
-    return response;
-  } catch (error) {
-    throw error;
+  if (!facebookAPIService.hasAccess()) {
+    throw new Error(localizedMessages.messageList.facebook.errorUnauthorized);
   }
+  let baseUrl = `https://graph.facebook.com/${FB_API_VERSION}/${node}`;
+  if (edge) {
+    baseUrl += `/${edge}`;
+  }
+  let fieldsUrl = (fields.length ? `&fields=${encodeURIComponent(fields.join())}` : '');
+  let url = `${baseUrl}?access_token=${facebookAPIService.getAccessToken()}${fieldsUrl}`;
+  let response = UrlFetchApp.fetch(url, {
+    method: 'GET',
+    contentType: 'application/json; charset=UTF-8'
+  });
+  return response;
 }
 
 /**
@@ -178,22 +176,18 @@ function getFbPages_() {
     'access_token',
     'tasks'
   ];
-  try {
-    let pages = JSON.parse(getFbGraphData(node, edge, fields));
-    let pagesData = pages.data.slice();
-    let nextUrl = pages.paging.next || null;
-    while (nextUrl) {
-      let nextResponse = JSON.parse(UrlFetchApp.fetch(nextUrl, {
-        method: 'GET',
-        contentType: 'application/json; charset=UTF-8'
-      }));
-      pagesData = pagesData.concat(nextResponse.data);
-      nextUrl = nextResponse.paging.next || null;
-    }
-    return pagesData;
-  } catch (error) {
-    throw error;
+  let pages = JSON.parse(getFbGraphData(node, edge, fields));
+  let pagesData = pages.data.slice();
+  let nextUrl = pages.paging.next || null;
+  while (nextUrl) {
+    let nextResponse = JSON.parse(UrlFetchApp.fetch(nextUrl, {
+      method: 'GET',
+      contentType: 'application/json; charset=UTF-8'
+    }));
+    pagesData = pagesData.concat(nextResponse.data);
+    nextUrl = nextResponse.paging.next || null;
   }
+  return pagesData;
 }
 
 /**
@@ -304,7 +298,7 @@ function updateFbSummaryPageList(muteUiAlert = false) {
 // me/feed?fields=id,permalink_url,created_time,backdated_time,place,picture,message,attachments,properties
 function updateFbPagePostList(muteUiAlert = false) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var timeZone = ss.getSpreadsheetTimeZone();
+  // var timeZone = ss.getSpreadsheetTimeZone();
   var ui = SpreadsheetApp.getUi();
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
   var config = getConfig_();
@@ -361,7 +355,7 @@ function updateFbPagePostList(muteUiAlert = false) {
         let postPermalink_url = post.permalink_url;
         let postCreatedTime = post.created_time;
         let postBackdatedTime = post.backdated_time || 'NA';
-        let postPlace = post.place || {'name': 'NA', 'id': 'NA'};
+        let postPlace = post.place || { 'name': 'NA', 'id': 'NA' };
         let postPlaceName = postPlace.name;
         let postPlaceId = postPlace.id;
         let postPictureUrl = post.picture || 'NA';
