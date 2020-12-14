@@ -129,8 +129,10 @@ function authCallbackYouTubeAPI_(request) {
  * Update both channel and video summary list.
  */
 function updateAllYouTubeList() {
+  console.log('Initiating updateAllYouTubeList: Updating channel and video summary list...'); // log
   updateYouTubeSummaryChannelList();
   updateYouTubeSummaryVideoList();
+  console.log('updateAllYouTubeList complete: Updating of channel and video summary list is complete.'); // log
 }
 
 /**
@@ -326,10 +328,10 @@ function youtubeMyVideoList_() {
     type: 'video'
   };
   var videoListString = youtubeData_('search', videoParameters);
-  console.log(`Initial video list retrieved: ${videoListString}`); // log
+  console.log(`Initial video list retrieved.`); // log
   var videoList = JSON.parse(videoListString);
   if (videoList.nextPageToken) {
-    console.log('Next Page Token exists. Retrieving next page...'); // log
+    console.log(`Next Page Token exists. Retrieving next page...`); // log
     let nextVideoListString = '';
     let nextVideoList = {};
     nextVideoList['nextPageToken'] = videoList.nextPageToken;
@@ -341,10 +343,11 @@ function youtubeMyVideoList_() {
         type: 'video',
         pageToken: nextVideoList.nextPageToken
       };
+      console.log(`Next Page Token: "${nextParameters.pageToken}"`); // log
       nextVideoListString = youtubeData_('search', nextParameters);
-      console.log(`Next video list retrieved: ${nextVideoListString}`); // log
       nextVideoList = JSON.parse(nextVideoListString);
       nextVideoList.items.forEach(value => videoList.items.push(value));
+      console.log(`Next video list retrieved.`); // log
     }
   }
   console.log('Completed youtubeMyVideoList_'); // log
