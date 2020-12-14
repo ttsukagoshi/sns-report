@@ -214,8 +214,11 @@ function onOpen() {
  * @return {string} Standarized error message
  */
 function errorMessage_(e) {
+  return e.stack;
+  /*
   let message = `Error: line - ${e.lineNumber}\n${e.stack}`;
   return message;
+  */
 }
 
 /**
