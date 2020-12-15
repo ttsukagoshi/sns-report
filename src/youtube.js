@@ -397,8 +397,8 @@ function youtubeData_(resourceType, parameters) {
   if (!youtubeAPIService.hasAccess()) {
     throw new Error('Unauthorized. Get authorized by Menu > YouTube > Authorize');
   }
-  let baseUrl = `https://www.googleapis.com/youtube/${YOUTUBE_DATA_API_VERSION}/${resourceType}`;
-  let paramString = '?';
+  var baseUrl = `https://www.googleapis.com/youtube/${YOUTUBE_DATA_API_VERSION}/${resourceType}`;
+  var paramString = '?';
   for (let k in parameters) {
     let param = `${k}=${encodeURIComponent(parameters[k])}`;
     if (paramString.slice(-1) !== '?') {
@@ -406,8 +406,8 @@ function youtubeData_(resourceType, parameters) {
     }
     paramString += param;
   }
-  let url = baseUrl + paramString;
-  let response = UrlFetchApp.fetch(url, {
+  var url = baseUrl + paramString;
+  var response = UrlFetchApp.fetch(url, {
     method: 'GET',
     contentType: 'application/json; charset=UTF-8',
     headers: {
@@ -581,6 +581,7 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
  * @returns {Object} {<Channel ID>:{<yyyy-MM-dd>: <count>}}
  */
 function youtubeMyVideoCountByPubDate_() {
+  console.log('Initiating youtubeMyVideoCountByPubDate_: Getting a day-by-day count of published videos per channel in form of a JavaScript object.'); // log
   var myVideos = youtubeMyVideoList_();
   var countList = myVideos.reduce(function (acc, cur) {
     let channelId = cur.snippet.channelId;
@@ -594,6 +595,7 @@ function youtubeMyVideoCountByPubDate_() {
     acc[channelId][publishedAtPT] += 1;
     return acc;
   }, {});
+  console.log(`Retrieved video count: ${JSON.stringify(countList)}`); // log
   return countList;
 }
 
