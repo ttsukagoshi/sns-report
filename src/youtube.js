@@ -637,7 +637,6 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
     );
     // Set common parameters for youtubeAnalyticsReportsQuery_()
     let startDate = latestMonth + '-01'; // This must be yyyy-MM-01, i.e., the first day of the target month(s) for this query
-    let endDatePre = new Date(latestMonthDate.getTime());
     let endDate = '';
     let metrics = 'viewerPercentage';
     let ids = 'channel==MINE';
@@ -649,7 +648,7 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
     let rowsData = [];
     while (latestMonthDate.getTime() <= currentLatestMonthDate.getTime()) {
       // Define endDate
-      endDatePre = new Date(latestMonthDate.setMonth(latestMonthDate.getMonth() + 1));
+      let endDatePre = new Date(latestMonthDate.setMonth(latestMonthDate.getMonth() + 1));
       endDate = formattedDateAnalytics_(new Date(endDatePre.setDate(endDatePre.getDate() - 1)));
       // Define thisYearMonth
       thisYearMonth = startDate.slice(0, 7);
