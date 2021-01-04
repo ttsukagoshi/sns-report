@@ -30,6 +30,11 @@ function weeklyAnalyticsUpdate() {
   console.log('Initiating weeklyAnalyticsUpdate: A periodical task to update analytics data using Google Apps Script\'s trigger...'); // log
   var muteUiAlert = true;
   var muteMailNotification = false;
-  updateYouTubeAnalyticsData(muteUiAlert, muteMailNotification);
-  console.log('weeklyAnalyticsUpdate complete: Periodical task to update analytics data using Google Apps Script\'s trigger is complete.'); // log
+  var yearLimit = false;
+  try {
+    updateYouTubeAnalyticsData(muteUiAlert, muteMailNotification, yearLimit);
+    console.log('weeklyAnalyticsUpdate complete: Periodical task to update analytics data using Google Apps Script\'s trigger is complete.'); // log
+  } catch (error) {
+    console.log('weeklyAnalyticsUpdate was terminated.'); // log
+  }
 }

@@ -425,15 +425,16 @@ function youtubeData_(resourceType, parameters) {
  * Get latest analytics data for YouTube channel and videos that the authorized user owns.
  * @param {boolean} muteUiAlert [Optional] Mute SpreadsheetApp.getUi().alert() when true; defaults to false.
  * @param {boolean} muteMailNotification [Optional] Mute email notification when true; defaults to true.
+ * @param {boolean} yearLimit [Optional] When true, limit the latest data to obtain to the last month of the targetYear, i.e., December. Defaults to true.
  */
-function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = true) {
+function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = true, yearLimit = true) {
   console.log('Initiating updateYouTubeAnalyticsData: Getting the latest analytics data for YouTube channel and videos that the authorized user owns...'); // log
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var myEmail = Session.getActiveUser().getEmail();
   var mailTemplate = localizedMessages.replaceUpdateYouTubeAnalyticsDataMailTemplate(ss.getUrl());
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
-  var yearLimit = true;
+  // var yearLimit = true;
   console.log(`UI alert is ${muteUiAlert ? 'muted' : 'not muted'}.\nMail notification is ${muteMailNotification ? 'disabled' : 'enabled'}.`); // log
   try {
     let ytCurrentYear = parseInt(scriptProperties.ytCurrentYear);
@@ -484,6 +485,8 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
         // Update year for loop process
         year += 1;
       }
+    } else {
+      console.log('No change of year detected.'); // log
     }
   } catch (error) {
     let message = errorMessage_(error);
