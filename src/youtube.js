@@ -815,6 +815,7 @@ function youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids = 'chann
 /**
  * Update YouTube analytics summary sheet of the spreadsheet.
  * The range designated in this script assumes the cells to be positioned in the layout of the sample spreadsheet.
+ * [URL of sample spreadsheet] /////////////////////
  */
 function createYouTubeAnalyticsSummary() {
   var ui = SpreadsheetApp.getUi();
