@@ -381,7 +381,7 @@ function youtubeMyVideoList_() {
  * @returns {array} Array of Javascript objects of video properties.
  */
 function youtubeVideos_(videoIds, getDetails = false) {
-  console.log(`[youtubeVideos_] Initiating: Getting the details of ${videoids.length} video(s)...`); // log
+  console.log(`[youtubeVideos_] Initiating: Getting the details of ${videoIds.length} video(s)...`); // log
   var videoParameters = {
     part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
     id: videoIds.join()
