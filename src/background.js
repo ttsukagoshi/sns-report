@@ -27,14 +27,14 @@
  * Periodically update analytics data using Google Apps Script's trigger.
  */
 function weeklyAnalyticsUpdate() {
-  console.log('Initiating weeklyAnalyticsUpdate: A periodical task to update analytics data using Google Apps Script\'s trigger...'); // log
+  console.log('[weeklyAnalyticsUpdate] Initiating: A periodical task to update analytics data using Google Apps Script\'s trigger...'); // log
   var muteUiAlert = true;
   var muteMailNotification = false;
   var yearLimit = false;
   try {
     updateYouTubeAnalyticsData(muteUiAlert, muteMailNotification, yearLimit);
-    console.log('weeklyAnalyticsUpdate complete: Periodical task to update analytics data using Google Apps Script\'s trigger is complete.'); // log
+    console.log('[weeklyAnalyticsUpdate] Complete: Periodical task to update analytics data using Google Apps Script\'s trigger is complete.'); // log
   } catch (error) {
-    console.log('weeklyAnalyticsUpdate was terminated.'); // log
+    console.log('[weeklyAnalyticsUpdate] Terminated.'); // log
   }
 }
