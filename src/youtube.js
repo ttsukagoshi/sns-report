@@ -129,10 +129,10 @@ function authCallbackYouTubeAPI_(request) {
  * Update both channel and video summary list.
  */
 function updateAllYouTubeList() {
-  console.log('Initiating updateAllYouTubeList: Updating channel and video summary list...'); // log
+  console.log('[updateAllYouTubeList] Initiating: Updating channel and video summary list...'); // log
   updateYouTubeSummaryChannelList();
   updateYouTubeSummaryVideoList();
-  console.log('updateAllYouTubeList complete: Updating of channel and video summary list is complete.'); // log
+  console.log('[updateAllYouTubeList] Complete: Updating of channel and video summary list is complete.'); // log
 }
 
 /**
@@ -140,6 +140,8 @@ function updateAllYouTubeList() {
  * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
  */
 function updateYouTubeSummaryChannelList(muteUiAlert = false) {
+  console.log('[updateYouTubeSummaryChannelList] Initiating: Listing the authorized user\'s channel(s) on the summary spreadsheet...'); // log
+  console.log(`[updateYouTubeSummaryChannelList] UI alert is ${muteUiAlert ? 'muted' : 'not muted'}.`); // log
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var timeZone = ss.getSpreadsheetTimeZone();
@@ -151,6 +153,7 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     // Get list of channel(s)
     let channelListFull = youtubeMyChannelList_();
     // Extract data for copying into spreadsheet
+    console.log('[updateYouTubeSummaryChannelList] Extracting channel list data for copying into spreadsheet...'); // log
     let channelList = channelListFull.map((element, index) => {
       let num = index + 1;
       let thumbnailUrl = element.snippet.thumbnails.default.url;
@@ -185,6 +188,7 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.youtube.updatedChannelListAlert, ui.ButtonSet.OK);
     }
+    console.log('[updateYouTubeSummaryChannelList] Complete: updated channel list.'); // log
     return channelList;
   } catch (error) {
     let message = errorMessage_(error);
@@ -192,6 +196,7 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.error.errorTitle, message, ui.ButtonSet.OK);
     }
+    console.log('[updateYouTubeSummaryChannelList] ' + message); // log
     return null;
   }
 }
@@ -199,8 +204,12 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
 /**
  * List the authorized user's video(s) on the summary spreadsheet
  * @param {boolean} muteUiAlert [Optional] Mute ui.alert() when true; defaults to false.
+ * @returns {Array} The 2d JavaScript array of the updated video list.
+ * This function returns null if no video was returned or if an error was thrown.
  */
 function updateYouTubeSummaryVideoList(muteUiAlert = false) {
+  console.log('[updateYouTubeSummaryVideoList] Initiating: Listing the authorized user\'s video(s) on the summary spreadsheet...'); // log
+  console.log(`[updateYouTubeSummaryVideoList] UI alert is ${muteUiAlert ? 'muted' : 'not muted'}.`); // log
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var timeZone = ss.getSpreadsheetTimeZone();
@@ -209,9 +218,10 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
   var config = getConfig_();
   var now = new Date();
   try {
-    // Get list of channel(s)
+    // Get list of video(s)
     let videoListFull = youtubeMyVideoList_();
     // Extract data for copying into spreadsheet
+    console.log('[updateYouTubeSummaryVideoList] Extracting video list data for copying into spreadsheet...'); // log
     let videoList = videoListFull.map((element, index) => {
       let num = index + 1;
       let thumbnailUrl = element.snippet.thumbnails.high.url;
@@ -274,6 +284,7 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.youtube.updatedVideoListAlert, ui.ButtonSet.OK);
     }
+    console.log('[updateYouTubeSummaryVideoList] Complete: updated video list.'); // log
     return videoList;
   } catch (error) {
     let message = errorMessage_(error);
@@ -281,6 +292,7 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.general.error.errorTitle, message, ui.ButtonSet.OK);
     }
+    console.log('[updateYouTubeSummaryVideoList] ' + message); // log
     return null;
   }
 }
@@ -291,13 +303,16 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
  * @returns {array} Array of Javascript objects of channel properties.
  */
 function youtubeMyChannelList_() {
+  console.log('[youtubeMyChannelList_] Initiating: Getting the list of all channels that the authorized user owns...'); // log
   // Get the list of channels
   var channelParameters = {
     part: 'snippet,statistics',
     mine: true
   };
   var channelList = JSON.parse(youtubeData_('channels', channelParameters));
+  console.log(`[youtubeMyChannelList_] Initial channel list retrieved.`); // log
   if (channelList.nextPageToken) {
+    console.log(`[youtubeMyChannelList_] Next Page Token exists. Retrieving next page...`); // log
     let nextChannelList = {};
     nextChannelList['nextPageToken'] = channelList.nextPageToken;
     while (nextChannelList.nextPageToken) {
@@ -307,11 +322,14 @@ function youtubeMyChannelList_() {
         mine: true,
         pageToken: nextChannelList.nextPageToken
       };
+      console.log(`[youtubeMyChannelList_] Next Page Token: "${nextChannelParameters.pageToken}"`); // log
       nextChannelList = {};
       nextChannelList = JSON.parse(youtubeData_('channels', nextChannelParameters));
       nextChannelList.items.forEach(value => channelList.items.push(value));
+      console.log(`[youtubeMyChannelList_] Next channel list retrieved.`); // log
     }
   }
+  console.log(`[youtubeMyChannelList_] Completed: returning data for ${channelList.items.length} channel(s).`); // log
   return channelList.items;
 }
 
@@ -321,17 +339,17 @@ function youtubeMyChannelList_() {
  * @returns {array} Array of Javascript objects of video properties.
  */
 function youtubeMyVideoList_() {
-  console.log('Initiating youtubeMyVideoList_: Getting the list of all video(s) that the authorized user owns...'); // log
+  console.log('[youtubeMyVideoList_] Initiating: Getting the list of all video(s) that the authorized user owns...'); // log
   var videoParameters = {
     part: 'snippet',
     forMine: true,
     type: 'video'
   };
   var videoListString = youtubeData_('search', videoParameters);
-  console.log(`Initial video list retrieved.`); // log
   var videoList = JSON.parse(videoListString);
+  console.log(`[youtubeMyVideoList_] Initial video list retrieved.`); // log
   if (videoList.nextPageToken) {
-    console.log(`Next Page Token exists. Retrieving next page...`); // log
+    console.log(`[youtubeMyVideoList_] Next Page Token exists. Retrieving next page...`); // log
     let nextVideoListString = '';
     let nextVideoList = {};
     nextVideoList['nextPageToken'] = videoList.nextPageToken;
@@ -343,14 +361,14 @@ function youtubeMyVideoList_() {
         type: 'video',
         pageToken: nextVideoList.nextPageToken
       };
-      console.log(`Next Page Token: "${nextParameters.pageToken}"`); // log
+      console.log(`[youtubeMyVideoList_] Next Page Token: "${nextParameters.pageToken}"`); // log
       nextVideoListString = youtubeData_('search', nextParameters);
       nextVideoList = JSON.parse(nextVideoListString);
       nextVideoList.items.forEach(value => videoList.items.push(value));
-      console.log(`Next video list retrieved.`); // log
+      console.log(`[youtubeMyVideoList_] Next video list retrieved.`); // log
     }
   }
-  console.log('Completed youtubeMyVideoList_'); // log
+  console.log(`[youtubeMyVideoList_] Completed: returning data for ${videoList.items.length} video(s).`); // log
   return videoList.items;
 }
 
@@ -363,12 +381,15 @@ function youtubeMyVideoList_() {
  * @returns {array} Array of Javascript objects of video properties.
  */
 function youtubeVideos_(videoIds, getDetails = false) {
+  console.log(`[youtubeVideos_] Initiating: Getting the details of ${videoids.length} video(s)...`); // log
   var videoParameters = {
     part: (getDetails == true ? 'snippet,statistics,status,contentDetails' : 'statistics,status,contentDetails'),
     id: videoIds.join()
   };
   var videoDetails = JSON.parse(youtubeData_('videos', videoParameters));
+  console.log(`[youtubeVideos_] Initial video data retrieved.`); // log
   if (videoDetails.nextPageToken) {
+    console.log(`[youtubeVideos_] Next Page Token exists. Retrieving next page...`); // log
     let nextVideoDetails = {};
     nextVideoDetails['nextPageToken'] = videoDetails.nextPageToken;
     while (nextVideoDetails.nextPageToken) {
@@ -378,11 +399,14 @@ function youtubeVideos_(videoIds, getDetails = false) {
         id: videoIds.join(),
         pageToken: nextVideoDetails.nextPageToken
       };
+      console.log(`[youtubeVideos_] Next Page Token: "${nextParameters.pageToken}"`); // log
       nextVideoDetails = {};
       nextVideoDetails = JSON.parse(youtubeData_('videos', nextParameters));
       nextVideoDetails.items.forEach(value => videoDetails.items.push(value));
+      console.log(`[youtubeVideos_] Next video data retrieved.`); // log
     }
   }
+  console.log(`[youtubeVideos_] Completed: returning data for ${videoDetails.items.length} video(s).`); // log
   return videoDetails.items;
 }
 
@@ -428,18 +452,18 @@ function youtubeData_(resourceType, parameters) {
  * @param {boolean} yearLimit [Optional] When true, limit the latest data to obtain to the last month of the targetYear, i.e., December. Defaults to true.
  */
 function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = true, yearLimit = true) {
-  console.log('Initiating updateYouTubeAnalyticsData: Getting the latest analytics data for YouTube channel and videos that the authorized user owns...'); // log
+  console.log('[updateYouTubeAnalyticsData] Initiating: Getting the latest analytics data for YouTube channel and videos that the authorized user owns...'); // log
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var myEmail = Session.getActiveUser().getEmail();
   var mailTemplate = localizedMessages.replaceUpdateYouTubeAnalyticsDataMailTemplate(ss.getUrl());
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
   // var yearLimit = true;
-  console.log(`UI alert is ${muteUiAlert ? 'muted' : 'not muted'}.\nMail notification is ${muteMailNotification ? 'disabled' : 'enabled'}.`); // log
+  console.log(`[updateYouTubeAnalyticsData] UI alert is ${muteUiAlert ? 'muted' : 'not muted'}.\nMail notification is ${muteMailNotification ? 'disabled' : 'enabled'}.`); // log
   try {
     let ytCurrentYear = parseInt(scriptProperties.ytCurrentYear);
     // Get latest data
-    console.log('Retrieving latest YouTube analytics data...'); // log
+    console.log('[updateYouTubeAnalyticsData] Retrieving latest YouTube analytics data...'); // log
     let updatedChannelAnalyticsDate = youtubeAnalyticsChannel(ytCurrentYear, yearLimit);
     let updateChannelDemographics = youtubeAnalyticsDemographics(ytCurrentYear, yearLimit);
     let updatedVideoAnalyticsDate = youtubeAnalyticsVideo(ytCurrentYear, yearLimit);
@@ -450,7 +474,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
       && updatedVideoAnalyticsDate.latestDateReturned.getFullYear() > ytCurrentYear
     );
     if (changeOfYear) {
-      console.log('Change of year detected. Checking to see if new files need to be created...'); // log
+      console.log('[updateYouTubeAnalyticsData] Change of year detected. Checking to see if new files need to be created...'); // log
       let config = getConfig_();
       let spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
       let options = {
@@ -486,11 +510,11 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
         year += 1;
       }
     } else {
-      console.log('No change of year detected.'); // log
+      console.log('[updateYouTubeAnalyticsData] No change of year detected.'); // log
     }
   } catch (error) {
     let message = errorMessage_(error);
-    console.log(message); // log
+    console.log('[updateYouTubeAnalyticsData] ' + message); // log
     if (!muteUiAlert) {
       SpreadsheetApp.getUi().alert(message);
     }
@@ -584,7 +608,7 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
  * @returns {Object} {<Channel ID>:{<yyyy-MM-dd>: <count>}}
  */
 function youtubeMyVideoCountByPubDate_() {
-  console.log('Initiating youtubeMyVideoCountByPubDate_: Getting a day-by-day count of published videos per channel in form of a JavaScript object.'); // log
+  console.log('[youtubeMyVideoCountByPubDate_] Initiating: Getting a day-by-day count of published videos per channel in form of a JavaScript object.'); // log
   var myVideos = youtubeMyVideoList_();
   var countList = myVideos.reduce(function (acc, cur) {
     let channelId = cur.snippet.channelId;
@@ -598,7 +622,7 @@ function youtubeMyVideoCountByPubDate_() {
     acc[channelId][publishedAtPT] += 1;
     return acc;
   }, {});
-  console.log(`Retrieved video count: ${JSON.stringify(countList)}`); // log
+  console.log(`[youtubeMyVideoCountByPubDate_] Retrieved video count: ${JSON.stringify(countList)}`); // log
   return countList;
 }
 
@@ -818,6 +842,7 @@ function youtubeAnalyticsReportsQuery_(startDate, endDate, metrics, ids = 'chann
  * [URL of sample spreadsheet] /////////////////////
  */
 function createYouTubeAnalyticsSummary() {
+  console.log('[createYouTubeAnalyticsSummary] Initiating createYouTubeAnalyticsSummary: Creating a monthly analytics summary report for the designated YouTube channel and year-month...'); // log
   var ui = SpreadsheetApp.getUi();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var ssTimeZone = ss.getSpreadsheetTimeZone();
@@ -831,7 +856,7 @@ function createYouTubeAnalyticsSummary() {
   try {
     // Channel ID
     let targetChannelId = summarySheet.getRange(3, 5).getValue(); // Assuming that the channel ID is entered in this cell
-    ////// Get list of YouTube channel(s) that the authorized user owns; for testing.
+    // Get list of YouTube channel(s) that the authorized user owns; for testing.
     let myChannelListFull = youtubeMyChannelList_();
     let myChannelIds = myChannelListFull.map(element => element.id);
     if (!targetChannelId) {
@@ -847,6 +872,7 @@ function createYouTubeAnalyticsSummary() {
     } else if (!reportMonth.match(/^\d{4}-\d{2}$/)) {
       throw new Error(localizedMessages.replaceErrorInvalidReportMonth(reportMonth));
     }
+    console.log(`[createYouTubeAnalyticsSummary] Verified channel ID and report month; creating report for YouTube channel "${targetChannelName}" for year-month of ${reportMonth}...`); // log
     let targetPeriodStartPre = new Date(parseInt(reportMonth.slice(0, 4)) - 2, parseInt(reportMonth.slice(-2)) - 1, 1);
     let targetPeriodStart = new Date(targetPeriodStartPre.setMonth(targetPeriodStartPre.getMonth() + 1));
     let reportPeriodStartPre = new Date(parseInt(reportMonth.slice(0, 4)) - 1, parseInt(reportMonth.slice(-2)) - 1, 1);
@@ -856,6 +882,7 @@ function createYouTubeAnalyticsSummary() {
     let targetPeriodEnd = new Date(targetPeriodEndPre.setDate(targetPeriodEndPre.getDate() - 1));
     // Update Channel/Video list
     let muteUiAlert = true;
+    console.log(`[createYouTubeAnalyticsSummary] UI alert is ${muteUiAlert ? 'muted' : 'not muted'}.`); // log
     let channelList = updateYouTubeSummaryChannelList(muteUiAlert);
     let videoList = updateYouTubeSummaryVideoList(muteUiAlert);
     let channelListTarget = channelList.filter(element => element[4] == targetChannelId);
@@ -878,6 +905,7 @@ function createYouTubeAnalyticsSummary() {
     let channelDemographicsDataHeader = [];
     let videoAnalyticsDataHeader = [];
     let spreadsheetList = getSpreadsheetList_(config.SHEET_NAME_SPREADSHEET_LIST);
+    console.log('[createYouTubeAnalyticsSummary] Updated channel summary. Scanning the list of spreadsheets for retrieving background data...'); // log
     for (let i = 0; i < spreadsheetList.length; i++) {
       let row = spreadsheetList[i];
       if (row.PLATFORM != 'YouTube' || row.YEAR > targetPeriodEnd.getFullYear()) {
@@ -962,7 +990,8 @@ function createYouTubeAnalyticsSummary() {
     bgDataChannelDemographics.unshift(channelDemographicsDataHeader);
     bgDataVideoAnalytics.unshift(videoAnalyticsDataHeader);
     // Process data for report
-    let bgDataChannelAnalyticsMod = bgDataChannelAnalytics.map(function (element, index) {
+    console.log('[createYouTubeAnalyticsSummary] Background data retrieved. Processing data for report...'); // log
+    let bgDataChannelAnalyticsMod = bgDataChannelAnalytics.map((element, index) => {
       if (index == 0) {
         let concatElement = element.concat(['CURRENT-YEAR', 'YEAR-MONTH_AGG', 'DISLIKES_INV', 'SUBSCRIBERS TOTAL']);
         return concatElement;
@@ -984,7 +1013,7 @@ function createYouTubeAnalyticsSummary() {
         return concatElement;
       }
     });
-    let bgDataVideoAnalyticsMod = bgDataVideoAnalytics.map(function (element, index) {
+    let bgDataVideoAnalyticsMod = bgDataVideoAnalytics.map((element, index) => {
       if (index == 0) {
         let concatElement = element.concat(['DISLIKES_INV', 'SUBSCRIBERS TOTAL', 'ESTIMATED SECONDS WATCHED']);
         return concatElement;
@@ -998,6 +1027,7 @@ function createYouTubeAnalyticsSummary() {
       }
     });
     // Delete existing temporary data and copy the new data on spreadsheet
+    console.log('[createYouTubeAnalyticsSummary] Data procession complete. Copying data on spreadsheet...'); // log
     let tempSheetChannelAnalytics = ss.getSheetByName(config.SHEET_NAME_TEMP_CHANNEL_ANALYTICS);
     let tempSheetChannelDemographics = ss.getSheetByName(config.SHEET_NAME_TEMP_CHANNEL_DEMOGRAPHICS);
     let tempSheetVideoAnalytics = ss.getSheetByName(config.SHEET_NAME_TEMP_VIDEO_ANALYTICS);
@@ -1012,10 +1042,11 @@ function createYouTubeAnalyticsSummary() {
       .setValues(bgDataChannelDemographics);
     tempSheetVideoAnalytics.getRange(1, 1, bgDataVideoAnalyticsMod.length, bgDataVideoAnalyticsMod[0].length)
       .setValues(bgDataVideoAnalyticsMod);
+    console.log('[createYouTubeAnalyticsSummary] Basic analytics data is copied on spreadsheet. Creating advanced statistics for each video...'); // log
     // Convert bgDataVideoAnalyticsMod into an array of objects grouped by video ID
     let bgDataVideoAnalyticsObj = groupArray_(bgDataVideoAnalyticsMod, 'VIDEO ID');
     // Create modified list of authenticated user's videos with advanced statistics
-    let videoListMod = videoList.map(function (element) {
+    let videoListMod = videoList.map(element => {
       // Name the values in element
       let [timestamp, num, thumbnailUrlFunction, thumbnailUrl, /*channelId*/, /*channelName*/, videoId, videoTitle, videoDesc, videoUrl, duration, caption, publishedAtUtc, publishedAtLocal, privacyStatus, latestViewCount, latestLikeCount, latestDislikeCount] = element;
       let durationSec = iso8601duration2sec_(duration);
@@ -1198,18 +1229,19 @@ function createYouTubeAnalyticsSummary() {
       return elementMod;
     });
     // Delete existing data
+    console.log('[createYouTubeAnalyticsSummary] Created advanced statistics. Deleting existing data and copying the new statistics to spreadsheet...'); // log
     videoSheet.getRange(videoSheetRowOffset, videoSheetColOffset, videoSheet.getLastRow() - videoSheetRowOffset + 1, videoSheet.getLastColumn() - videoSheetColOffset + 1)
       .deleteCells(SpreadsheetApp.Dimension.ROWS);
     // Enter new data
     videoSheet.getRange(videoSheetRowOffset, videoSheetColOffset, videoListMod.length, videoListMod[0].length)
       .setValues(videoListMod);
     let scriptEnd = new Date();
-    let completeMessage = localizedMessages.replaceReportCreated(reportMonth, targetChannelName, (scriptEnd.getTime() - now.getTime()) / 1000);
-    console.log(completeMessage); // log
-    ui.alert(completeMessage);
+    let scriptExeTime = (scriptEnd.getTime() - now.getTime()) / 1000;
+    console.log(`[createYouTubeAnalyticsSummary] Complete: Report for ${reportMonth} of YouTube channel "${targetChannelName}" created.\nScript Time: ${scriptExeTime} secs.`); // log
+    ui.alert(localizedMessages.replaceReportCreated(reportMonth, targetChannelName, scriptExeTime));
   } catch (error) {
     let message = errorMessage_(error);
-    console.log(message); // log
+    console.log('[createYouTubeAnalyticsSummary] ' + message); // log
     ui.alert(message);
   }
 }
