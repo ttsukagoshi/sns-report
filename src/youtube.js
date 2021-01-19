@@ -1204,9 +1204,13 @@ function createYouTubeAnalyticsSummary() {
     videoSheet.getRange(videoSheetRowOffset, videoSheetColOffset, videoListMod.length, videoListMod[0].length)
       .setValues(videoListMod);
     let scriptEnd = new Date();
-    ui.alert(localizedMessages.replaceReportCreated(reportMonth, targetChannelName, (scriptEnd.getTime() - now.getTime()) / 1000));
+    let completeMessage = localizedMessages.replaceReportCreated(reportMonth, targetChannelName, (scriptEnd.getTime() - now.getTime()) / 1000);
+    console.log(completeMessage); // log
+    ui.alert(completeMessage);
   } catch (error) {
-    ui.alert(errorMessage_(error));
+    let message = errorMessage_(error);
+    console.log(message); // log
+    ui.alert(message);
   }
 }
 
