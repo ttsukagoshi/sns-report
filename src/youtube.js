@@ -1359,47 +1359,31 @@ function iso8601duration2sec_(iso8601duration) {
 function groupArray_(data, property = null) {
   let header = data.shift();
   let index = header.indexOf(property);
-  if (property == null) {
+  if (!property) {
     let groupedObj = {};
-    groupedObj['data'] = data.map(function (values) {
-      return header.reduce(function (obj, key, ind) {
-        obj[key] = values[ind];
-        return obj;
-      }, {});
-    });
+    groupedObj['data'] = data.map(values => header.reduce((obj, key, ind) => {
+      obj[key] = values[ind];
+      return obj;
+    }, {}));
     return groupedObj;
   } else if (index < 0) {
     let invalidProperty = {};
     return invalidProperty;
   } else {
-    let groupedObj = data.reduce(
-      function (accObj, curArr) {
-        let key = curArr[index];
-        if (!accObj[key]) {
-          accObj[key] = [];
-        }
-        let rowObj = createObj_(header, curArr);
-        accObj[key].push(rowObj);
-        return accObj;
+    let groupedObj = data.reduce((accObj, curArr) => {
+      let key = curArr[index];
+      if (!accObj[key]) {
+        accObj[key] = [];
+      }
+      let rowObj = header.reduce((obj, headerKey, ind) => {
+        obj[headerKey] = curArr[ind];
+        return obj;
       }, {});
+      accObj[key].push(rowObj);
+      return accObj;
+    }, {});
     return groupedObj;
   }
-}
-
-/**
- * Create a Javascript object from a set of keys and values
- * i.e., where keys = [key0, key1, ..., key[n]] and values = [value0, value1, ..., value[n]],
- * this function will return an object = {key0: value0, ..., key[n]: value[n]}
- * @param {array} keys 
- * @param {array} values
- * @return {Object} 
- */
-function createObj_(keys, values) {
-  let obj = {};
-  for (let i = 0; i < keys.length; ++i) {
-    obj[keys[i]] = values[i];
-  }
-  return obj;
 }
 
 /**
