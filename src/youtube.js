@@ -998,14 +998,7 @@ function createYouTubeAnalyticsSummary() {
       } else {
         // Assuming that the first column of the channel analytics data table is the date
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-        let ytCurrentYear = (thisDate.getTime() >= reportPeriodStart.getTime() ? 'CURRENT' : 'PREVIOUS');
-        // convert previous year's year-month into current year's corresponding months for aggregation
-        // assuming column index 12 is YEAR-MONTH
-        let yearMonthAggPre = Utilities.formatDate(element[12], ssTimeZone, 'yyyy-MM');
-        let yearMonthAgg = (
-          ytCurrentYear == 'PREVIOUS'
-            ? `${parseInt(yearMonthAggPre.slice(0, 4)) + 1}-${yearMonthAggPre.slice(-2)}`
-            : yearMonthAggPre);
+        let [ytCurrentYear, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone);
         let dislikesInv = -parseInt(element[4]); // Invert postive counts of dislikes to negative for better visualization
         let subscribersTotal = parseInt(element[5]) - parseInt(element[6]); // [SUBSCRIBERS GAINED] - [SUBSCRIBERS LOST]
         // Add column(s) to the original data
@@ -1015,14 +1008,17 @@ function createYouTubeAnalyticsSummary() {
     });
     let bgDataVideoAnalyticsMod = bgDataVideoAnalytics.map((element, index) => {
       if (index == 0) {
-        let concatElement = element.concat(['DISLIKES_INV', 'SUBSCRIBERS TOTAL', 'ESTIMATED SECONDS WATCHED']);
+        let concatElement = element.concat(['DISLIKES_INV', 'SUBSCRIBERS TOTAL', 'ESTIMATED SECONDS WATCHED', 'CURRENT-YEAR', 'YEAR-MONTH_AGG']);
         return concatElement;
       } else {
         let dislikesInv = -parseInt(element[5]); // Invert postive counts of dislikes to negative for better visualization
         let subscribersTotal = parseInt(element[6]) - parseInt(element[7]); // [SUBSCRIBERS GAINED] - [SUBSCRIBERS LOST]
         let estimatedSecWatchedLatest = element[8] * 60; // Convert [ESTIMATED MINUTES WATCHED] into seconds
+        // Assuming that the first column of the channel analytics data table is the date
+        let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
+        let [ytCurrentYear, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone);
         // Add column(s) to the original data
-        let concatElement = element.concat([dislikesInv, subscribersTotal, estimatedSecWatchedLatest]);
+        let concatElement = element.concat([dislikesInv, subscribersTotal, estimatedSecWatchedLatest, ytCurrentYear, yearMonthAgg]);
         return concatElement;
       }
     });
@@ -1404,4 +1400,23 @@ function createObj_(keys, values) {
     obj[keys[i]] = values[i];
   }
   return obj;
+}
+
+/**
+ * Creates elements for pivot tables on the spreadsheet by determining whether the given date is before or after the baseline date
+ * and returns an array whose first element is PREVIOUS or CURRENT for dates before or after the baseline date, respectively.
+ * If this first element is 'CURRENT', the second element returned is the string of year-month in yyyy-MM of the given date;
+ * if 'PREVIOUS', this will be the year-month of the year after the given date.
+ * @param {Date} targetDate The target date object to determine.
+ * @param {Date} baselineDate The baseline date object.
+ * @param {string} timezone [Optional] Timezone to express the yyyy-MM in. Defaults to the executing script file's timezone.
+ * @returns {array} [status, yearMonth], where the status is 'PREVIOUS' or 'CURRENT' and yearMonth is a string of 'yyyy-MM'.
+ */
+function dateStatus_(targetDate, baselineDate, timezone = Session.getScriptTimeZone()) {
+  let status = (targetDate.getTime() >= baselineDate.getTime() ? 'CURRENT' : 'PREVIOUS');
+  // convert previous year's year-month into current year's corresponding months for aggregation
+  // assuming column index 12 is YEAR-MONTH
+  let yearMonthAggPre = Utilities.formatDate(targetDate, timezone, 'yyyy-MM');
+  let yearMonthAgg = (status == 'PREVIOUS' ? `${parseInt(yearMonthAggPre.slice(0, 4)) + 1}-${yearMonthAggPre.slice(-2)}` : yearMonthAggPre);
+  return [status, yearMonthAgg];
 }
