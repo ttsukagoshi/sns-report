@@ -1041,12 +1041,20 @@ function createYouTubeAnalyticsSummary() {
     console.info('[createYouTubeAnalyticsSummary] Basic analytics data is copied on spreadsheet. Creating advanced statistics for each video...'); // log
     // Convert bgDataVideoAnalyticsMod into an array of objects grouped by video ID
     let bgDataVideoAnalyticsObj = groupArray_(bgDataVideoAnalyticsMod, 'VIDEO ID');
+    // Key dates for advanced statistics based on reporting period
+    let baseDate = new Date(reportMonth.slice(0, 4), parseInt(reportMonth.slice(-2)) - 1, 1);
+    let targetPeriodStartString = formattedDateAnalytics_(targetPeriodStart, 'PST');
+    let reportPeriodStartString = formattedDateAnalytics_(reportPeriodStart, 'PST');
+    let targetPeriodEndString = formattedDateAnalytics_(targetPeriodEnd, 'PST');
+    let reportMonthStartString = formattedDateAnalytics_(baseDate, 'PST');
+    let prevMonthStartString = formattedDateAnalytics_(new Date(baseDate.setMonth(baseDate.getMonth() - 1)), 'PST');
+    let prevYearSameMonthStartString = formattedDateAnalytics_(new Date(parseInt(reportMonth.slice(0, 4)) - 1, parseInt(reportMonth.slice(-2)) - 1, 1), 'PST');
     // Create modified list of authenticated user's videos with advanced statistics
     let videoListMod = videoList.map(element => {
       // Name the values in element
       let [timestamp, num, thumbnailUrlFunction, thumbnailUrl, /*channelId*/, /*channelName*/, videoId, videoTitle, videoDesc, videoUrl, duration, caption, publishedAtUtc, publishedAtLocal, privacyStatus, latestViewCount, latestLikeCount, latestDislikeCount] = element;
       let durationSec = iso8601duration2sec_(duration);
-      // Key dates for advanced statistics
+      // Key dates for advanced statistics based on publication period
       let publishedAt = new Date(publishedAtUtc);
       let week1 = new Date(publishedAt.setDate(publishedAt.getDate() + 7));
       let week1string = formattedDateAnalytics_(week1, 'PST');
@@ -1054,6 +1062,9 @@ function createYouTubeAnalyticsSummary() {
       let week4string = formattedDateAnalytics_(week4, 'PST');
       let week12 = new Date(publishedAt.setDate(publishedAt.getDate() * 56)); // 7 + 21 + 56 = 84 (= 7 * 12)
       let week12string = formattedDateAnalytics_(week12, 'PST');
+      // Objects to store the advanced statistics
+      //// Aggregated statistics for the first 7 days after the respective videos were released,
+      //// i.e., published or created at 'unlisted' status.
       let week1Stats = {
         'days': [],
         'views': 0,
@@ -1065,6 +1076,7 @@ function createYouTubeAnalyticsSummary() {
         'cardImpression': 0,
         'cardClicks': 0
       };
+      //// Aggregated statistics for the first 28 days after the respective videos were released.
       let week4Stats = {
         'days': [],
         'views': 0,
@@ -1076,7 +1088,74 @@ function createYouTubeAnalyticsSummary() {
         'cardImpression': 0,
         'cardClicks': 0
       };
+      //// Aggregated statistics for the first 84 days after the respective videos were released.
       let week12Stats = {
+        'days': [],
+        'views': 0,
+        'likes': 0,
+        'dislikes': 0,
+        'subscribersGained': 0,
+        'subscribersLost': 0,
+        'estimatedSecWatched': 0,
+        'cardImpression': 0,
+        'cardClicks': 0
+      };
+      //// Aggregated statistics for the respective videos during the period of
+      //// on and after targetPeriodStartString date
+      //// and before reportPeriodStartString Date
+      let prevYearAggStats = {
+        'days': [],
+        'views': 0,
+        'likes': 0,
+        'dislikes': 0,
+        'subscribersGained': 0,
+        'subscribersLost': 0,
+        'estimatedSecWatched': 0,
+        'cardImpression': 0,
+        'cardClicks': 0
+      };
+      //// Aggregated statistics for the respective videos during the inclusive period 
+      //// between reportPeriodStartString and targetPeriodEndString dates.
+      let curYearAggStats = {
+        'days': [],
+        'views': 0,
+        'likes': 0,
+        'dislikes': 0,
+        'subscribersGained': 0,
+        'subscribersLost': 0,
+        'estimatedSecWatched': 0,
+        'cardImpression': 0,
+        'cardClicks': 0
+      };
+      //// Aggregated statistics for the respective videos during the inclusive period 
+      //// between reportMonthStartString and targetPeriodEndString dates.
+      let curMonthAggStats = {
+        'days': [],
+        'views': 0,
+        'likes': 0,
+        'dislikes': 0,
+        'subscribersGained': 0,
+        'subscribersLost': 0,
+        'estimatedSecWatched': 0,
+        'cardImpression': 0,
+        'cardClicks': 0
+      };
+      //// Aggregated statistics for the respective videos during the period 
+      //// starting from prevMonthStartString to before reportMonthStartString dates.
+      let prevMonthAggStats = {
+        'days': [],
+        'views': 0,
+        'likes': 0,
+        'dislikes': 0,
+        'subscribersGained': 0,
+        'subscribersLost': 0,
+        'estimatedSecWatched': 0,
+        'cardImpression': 0,
+        'cardClicks': 0
+      };
+      //// Aggregated statistics for the respective videos during the period 
+      //// starting from prevYearSameMonthStart to before reportPeriodStartString dates.
+      let prevYearSameMonthAggStats = {
         'days': [],
         'views': 0,
         'likes': 0,
@@ -1089,8 +1168,8 @@ function createYouTubeAnalyticsSummary() {
       };
       // Advanced statistics using bgDataVideoAnalyticsMod
       let thisVideoAnalytics = bgDataVideoAnalyticsObj[videoId];
-      for (let i = 0; i < thisVideoAnalytics.length; i++) {
-        let dailyData = thisVideoAnalytics[i];
+      thisVideoAnalytics.forEach(dailyData => {
+        // Aggregate advanced statistics based on publication period
         if (dailyData['DAY'] <= week1string) {
           week1Stats.days.push(dailyData['DAY']);
           week4Stats.days.push(dailyData['DAY']);
@@ -1172,12 +1251,138 @@ function createYouTubeAnalyticsSummary() {
           week12Stats.cardImpression += dailyData['CARD IMPRESSIONS'];
           // Card Clicks
           week12Stats.cardClicks += dailyData['CARD CLICKS'];
-        } else {
-          continue;
         }
-      }
+        // Aggregate advanced statistics based on reporting period
+        if (dailyData['DAY'] >= targetPeriodStartString && dailyData['DAY'] < prevYearSameMonthStartString) {
+          prevYearAggStats.days.push(dailyData['DAY']);
+          // Views
+          prevYearAggStats.views += dailyData['VIEWS'];
+          // Likes
+          prevYearAggStats.likes += dailyData['LIKES'];
+          // Dislikes
+          prevYearAggStats.dislikes += dailyData['DISLIKES'];
+          // Subscribers Gained
+          prevYearAggStats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          // Subscribers Lost
+          prevYearAggStats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          // Estimated Seconds Watched
+          prevYearAggStats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          // Card Impression
+          prevYearAggStats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          // Card Clicks
+          prevYearAggStats.cardClicks += dailyData['CARD CLICKS'];
+        } else if (dailyData['DAY'] >= prevYearSameMonthStartString && dailyData['DAY'] < reportPeriodStartString) {
+          prevYearAggStats.days.push(dailyData['DAY']);
+          prevYearSameMonthAggStats.days.push(dailyData['DAY']);
+          // Views
+          prevYearAggStats.views += dailyData['VIEWS'];
+          prevYearSameMonthAggStats.views += dailyData['VIEWS'];
+          // Likes
+          prevYearAggStats.likes += dailyData['LIKES'];
+          prevYearSameMonthAggStats.likes += dailyData['LIKES'];
+          // Dislikes
+          prevYearAggStats.dislikes += dailyData['DISLIKES'];
+          prevYearSameMonthAggStats.dislikes += dailyData['DISLIKES'];
+          // Subscribers Gained
+          prevYearAggStats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          prevYearSameMonthAggStats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          // Subscribers Lost
+          prevYearAggStats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          prevYearSameMonthAggStats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          // Estimated Seconds Watched
+          prevYearAggStats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          prevYearSameMonthAggStats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          // Card Impression
+          prevYearAggStats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          prevYearSameMonthAggStats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          // Card Clicks
+          prevYearAggStats.cardClicks += dailyData['CARD CLICKS'];
+          prevYearSameMonthAggStats.cardClicks += dailyData['CARD CLICKS'];
+        } else if (dailyData['DAY'] >= reportPeriodStartString && dailyData['DAY'] < prevMonthStartString) {
+          curYearAggStats.days.push(dailyData['DAY']);
+          // Views
+          curYearAggStats.views += dailyData['VIEWS'];
+          // Likes
+          curYearAggStats.likes += dailyData['LIKES'];
+          // Dislikes
+          curYearAggStats.dislikes += dailyData['DISLIKES'];
+          // Subscribers Gained
+          curYearAggStats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          // Subscribers Lost
+          curYearAggStats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          // Estimated Seconds Watched
+          curYearAggStats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          // Card Impression
+          curYearAggStats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          // Card Clicks
+          curYearAggStats.cardClicks += dailyData['CARD CLICKS'];
+        } else if (dailyData['DAY'] >= prevMonthStartString && dailyData['DAY'] < reportMonthStartString) {
+          curYearAggStats.days.push(dailyData['DAY']);
+          prevMonthAggStats.days.push(dailyData['DAY']);
+          // Views
+          curYearAggStats.views += dailyData['VIEWS'];
+          prevMonthAggStats.views += dailyData['VIEWS'];
+          // Likes
+          curYearAggStats.likes += dailyData['LIKES'];
+          prevMonthAggStats.likes += dailyData['LIKES'];
+          // Dislikes
+          curYearAggStats.dislikes += dailyData['DISLIKES'];
+          prevMonthAggStats.dislikes += dailyData['DISLIKES'];
+          // Subscribers Gained
+          curYearAggStats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          prevMonthAggStats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          // Subscribers Lost
+          curYearAggStats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          prevMonthAggStats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          // Estimated Seconds Watched
+          curYearAggStats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          prevMonthAggStats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          // Card Impression
+          curYearAggStats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          prevMonthAggStats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          // Card Clicks
+          curYearAggStats.cardClicks += dailyData['CARD CLICKS'];
+          prevMonthAggStats.cardClicks += dailyData['CARD CLICKS'];
+        } else if (dailyData['DAY'] >= reportMonthStartString && dailyData['DAY'] <= targetPeriodEndString) {
+          curYearAggStats.days.push(dailyData['DAY']);
+          curMonthAggStats.days.push(dailyData['DAY']);
+          // Views
+          curYearAggStats.views += dailyData['VIEWS'];
+          curMonthAggStats.views += dailyData['VIEWS'];
+          // Likes
+          curYearAggStats.likes += dailyData['LIKES'];
+          curMonthAggStats.likes += dailyData['LIKES'];
+          // Dislikes
+          curYearAggStats.dislikes += dailyData['DISLIKES'];
+          curMonthAggStats.dislikes += dailyData['DISLIKES'];
+          // Subscribers Gained
+          curYearAggStats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          curMonthAggStats.subscribersGained += dailyData['SUBSCRIBERS GAINED'];
+          // Subscribers Lost
+          curYearAggStats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          curMonthAggStats.subscribersLost += dailyData['SUBSCRIBERS LOST'];
+          // Estimated Seconds Watched
+          curYearAggStats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          curMonthAggStats.estimatedSecWatched += (dailyData['ESTIMATED MINUTES WATCHED'] * 60);
+          // Card Impression
+          curYearAggStats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          curMonthAggStats.cardImpression += dailyData['CARD IMPRESSIONS'];
+          // Card Clicks
+          curYearAggStats.cardClicks += dailyData['CARD CLICKS'];
+          curMonthAggStats.cardClicks += dailyData['CARD CLICKS'];
+        } else {
+          return;
+        }
+      });
+      let week1AverageViewPercentage = 100 * ((week1Stats.estimatedSecWatched / week1Stats.views) / durationSec);
+      let week4AverageViewPercentage = 100 * ((week4Stats.estimatedSecWatched / week4Stats.views) / durationSec);
+      let week12AverageViewPercentage = 100 * ((week12Stats.estimatedSecWatched / week12Stats.views) / durationSec);
+      let prevYearAggStatsAverageViewPercentage = 100 * ((prevYearAggStats.estimatedSecWatched / prevYearAggStats.views) / durationSec);
+      let curYearAggStatsAverageViewPercentage = 100 * ((curYearAggStats.estimatedSecWatched / curYearAggStats.views) / durationSec);
+      let curMonthAggStatsAverageViewPercentage = 100 * ((curMonthAggStats.estimatedSecWatched / curMonthAggStats.views) / durationSec);
+      let prevMonthAggStatsAverageViewPercentage = 100 * ((prevMonthAggStats.estimatedSecWatched / prevMonthAggStats.views) / durationSec);
+      let prevYearSameMonthAggStatsAverageViewPercentage = 100 * ((prevYearSameMonthAggStats.estimatedSecWatched / prevYearSameMonthAggStats.views) / durationSec);
       let elementMod = [
-        // channelId, channelName, 
         num,
         thumbnailUrlFunction,
         thumbnailUrl,
@@ -1193,33 +1398,116 @@ function createYouTubeAnalyticsSummary() {
         latestViewCount,
         latestLikeCount,
         latestDislikeCount,
+        // Week 1 statistics
         week1Stats.views,
         week1Stats.likes,
         week1Stats.dislikes,
         week1Stats.subscribersGained,
         week1Stats.subscribersLost,
         week1Stats.estimatedSecWatched,
-        100 * ((week1Stats.estimatedSecWatched / week1Stats.views) / durationSec),
+        (week1AverageViewPercentage >= 100 ? Number.parseFloat(week1AverageViewPercentage).toPrecision(4) : Number.parseFloat(week1AverageViewPercentage).toPrecision(3)),
         week1Stats.cardImpression,
         week1Stats.cardClicks,
+        // Week 4 statistics
         week4Stats.views,
         week4Stats.likes,
         week4Stats.dislikes,
         week4Stats.subscribersGained,
         week4Stats.subscribersLost,
         week4Stats.estimatedSecWatched,
-        100 * ((week4Stats.estimatedSecWatched / week4Stats.views) / durationSec),
+        (week4AverageViewPercentage >= 100 ? Number.parseFloat(week4AverageViewPercentage).toPrecision(4) : Number.parseFloat(week4AverageViewPercentage).toPrecision(3)),
         week4Stats.cardImpression,
         week4Stats.cardClicks,
+        // Week 12 statistics
         week12Stats.views,
         week12Stats.likes,
         week12Stats.dislikes,
         week12Stats.subscribersGained,
         week12Stats.subscribersLost,
         week12Stats.estimatedSecWatched,
-        100 * ((week12Stats.estimatedSecWatched / week12Stats.views) / durationSec),
+        (week12AverageViewPercentage >= 100 ? Number.parseFloat(week12AverageViewPercentage).toPrecision(4) : Number.parseFloat(week12AverageViewPercentage).toPrecision(3)),
         week12Stats.cardImpression,
         week12Stats.cardClicks,
+        // Current month statistics
+        curMonthAggStats.views,
+        curMonthAggStats.likes,
+        curMonthAggStats.dislikes,
+        curMonthAggStats.subscribersGained,
+        curMonthAggStats.subscribersLost,
+        curMonthAggStats.estimatedSecWatched,
+        (curMonthAggStatsAverageViewPercentage >= 100 ? Number.parseFloat(curMonthAggStatsAverageViewPercentage).toPrecision(4) : Number.parseFloat(curMonthAggStatsAverageViewPercentage).toPrecision(3)),
+        curMonthAggStats.cardImpression,
+        curMonthAggStats.cardClicks,
+        // Previous month statistics
+        prevMonthAggStats.views,
+        prevMonthAggStats.likes,
+        prevMonthAggStats.dislikes,
+        prevMonthAggStats.subscribersGained,
+        prevMonthAggStats.subscribersLost,
+        prevMonthAggStats.estimatedSecWatched,
+        (prevMonthAggStatsAverageViewPercentage >= 100 ? Number.parseFloat(prevMonthAggStatsAverageViewPercentage).toPrecision(4) : Number.parseFloat(prevMonthAggStatsAverageViewPercentage).toPrecision(3)),
+        prevMonthAggStats.cardImpression,
+        prevMonthAggStats.cardClicks,
+        // Previous year, same month statistics
+        prevYearSameMonthAggStats.views,
+        prevYearSameMonthAggStats.likes,
+        prevYearSameMonthAggStats.dislikes,
+        prevYearSameMonthAggStats.subscribersGained,
+        prevYearSameMonthAggStats.subscribersLost,
+        prevYearSameMonthAggStats.estimatedSecWatched,
+        (prevYearSameMonthAggStatsAverageViewPercentage >= 100 ? Number.parseFloat(prevYearSameMonthAggStatsAverageViewPercentage).toPrecision(4) : Number.parseFloat(prevYearSameMonthAggStatsAverageViewPercentage).toPrecision(3)),
+        prevYearSameMonthAggStats.cardImpression,
+        prevYearSameMonthAggStats.cardClicks,
+        // Current year aggregated statistics
+        curYearAggStats.views,
+        curYearAggStats.likes,
+        curYearAggStats.dislikes,
+        curYearAggStats.subscribersGained,
+        curYearAggStats.subscribersLost,
+        curYearAggStats.estimatedSecWatched,
+        (curYearAggStatsAverageViewPercentage >= 100 ? Number.parseFloat(curYearAggStatsAverageViewPercentage).toPrecision(4) : Number.parseFloat(curYearAggStatsAverageViewPercentage).toPrecision(3)),
+        curYearAggStats.cardImpression,
+        curYearAggStats.cardClicks,
+        // Previous year aggregated statistics
+        prevYearAggStats.views,
+        prevYearAggStats.likes,
+        prevYearAggStats.dislikes,
+        prevYearAggStats.subscribersGained,
+        prevYearAggStats.subscribersLost,
+        prevYearAggStats.estimatedSecWatched,
+        (prevYearAggStatsAverageViewPercentage >= 100 ? Number.parseFloat(prevYearAggStatsAverageViewPercentage).toPrecision(4) : Number.parseFloat(prevYearAggStatsAverageViewPercentage).toPrecision(3)),
+        prevYearAggStats.cardImpression,
+        prevYearAggStats.cardClicks,
+        // Month-on-month diffs
+        curMonthAggStats.views - prevMonthAggStats.views,
+        curMonthAggStats.likes - prevMonthAggStats.likes,
+        curMonthAggStats.dislikes - prevMonthAggStats.dislikes,
+        curMonthAggStats.subscribersGained - prevMonthAggStats.subscribersGained,
+        curMonthAggStats.subscribersLost - prevMonthAggStats.subscribersLost,
+        curMonthAggStats.estimatedSecWatched - prevMonthAggStats.estimatedSecWatched,
+        Number.parseFloat(curMonthAggStatsAverageViewPercentage - prevMonthAggStatsAverageViewPercentage).toPrecision(4),
+        curMonthAggStats.cardImpression - prevMonthAggStats.cardImpression,
+        curMonthAggStats.cardClicks - prevMonthAggStats.cardClicks,
+        // Same month last year diffs
+        curMonthAggStats.views - prevYearSameMonthAggStats.views,
+        curMonthAggStats.likes - prevYearSameMonthAggStats.likes,
+        curMonthAggStats.dislikes - prevYearSameMonthAggStats.dislikes,
+        curMonthAggStats.subscribersGained - prevYearSameMonthAggStats.subscribersGained,
+        curMonthAggStats.subscribersLost - prevYearSameMonthAggStats.subscribersLost,
+        curMonthAggStats.estimatedSecWatched - prevYearSameMonthAggStats.estimatedSecWatched,
+        Number.parseFloat(curMonthAggStatsAverageViewPercentage - prevYearSameMonthAggStatsAverageViewPercentage).toPrecision(4),
+        curMonthAggStats.cardImpression - prevYearSameMonthAggStats.cardImpression,
+        curMonthAggStats.cardClicks - prevYearSameMonthAggStats.cardClicks,
+        // Year-on-year diffs
+        curYearAggStats.views - prevYearAggStats.views,
+        curYearAggStats.likes - prevYearAggStats.likes,
+        curYearAggStats.dislikes - prevYearAggStats.dislikes,
+        curYearAggStats.subscribersGained - prevYearAggStats.subscribersGained,
+        curYearAggStats.subscribersLost - prevYearAggStats.subscribersLost,
+        curYearAggStats.estimatedSecWatched - prevYearAggStats.estimatedSecWatched,
+        Number.parseFloat(curYearAggStatsAverageViewPercentage - prevYearAggStatsAverageViewPercentage).toPrecision(4),
+        curYearAggStats.cardImpression - prevYearAggStats.cardImpression,
+        curYearAggStats.cardClicks - prevYearAggStats.cardClicks,
         timestamp
       ];
       return elementMod;
@@ -1315,7 +1603,7 @@ function yearMonth2Date_(yearMonth) {
  * @param {Date} date Date object to format
  * @param {string} timeZone [Optional] Time zone; defaults to the script's time zone. https://developers.google.com/apps-script/reference/base/session#getScriptTimeZone().
  * https://developers.google.com/youtube/analytics/dimensions#Temporal_Dimensions
- * @returns {string} Formatted date string
+ * @returns {string} Formatted date string in yyyy-MM-dd
  */
 function formattedDateAnalytics_(date, timeZone = Session.getScriptTimeZone()) {
   var dateString = Utilities.formatDate(date, timeZone, 'yyyy-MM-dd');
