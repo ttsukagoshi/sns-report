@@ -998,7 +998,7 @@ function createYouTubeAnalyticsSummary() {
       } else {
         // Assuming that the first column of the channel analytics data table is the date
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-        let [ytCurrentYear, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone);
+        let [ytCurrentYear, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone, targetPeriodStart);
         let dislikesInv = -parseInt(element[4]); // Invert postive counts of dislikes to negative for better visualization
         let subscribersTotal = parseInt(element[5]) - parseInt(element[6]); // [SUBSCRIBERS GAINED] - [SUBSCRIBERS LOST]
         // Add column(s) to the original data
@@ -1016,7 +1016,7 @@ function createYouTubeAnalyticsSummary() {
         let estimatedSecWatchedLatest = element[8] * 60; // Convert [ESTIMATED MINUTES WATCHED] into seconds
         // Assuming that the first column of the channel analytics data table is the date
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-        let [ytCurrentYear, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone);
+        let [ytCurrentYear, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone, targetPeriodStart);
         // Add column(s) to the original data
         let concatElement = element.concat([dislikesInv, subscribersTotal, estimatedSecWatchedLatest, ytCurrentYear, yearMonthAgg]);
         return concatElement;
@@ -1410,13 +1410,18 @@ function createObj_(keys, values) {
  * @param {Date} targetDate The target date object to determine.
  * @param {Date} baselineDate The baseline date object.
  * @param {string} timezone [Optional] Timezone to express the yyyy-MM in. Defaults to the executing script file's timezone.
- * @returns {array} [status, yearMonth], where the status is 'PREVIOUS' or 'CURRENT' and yearMonth is a string of 'yyyy-MM'.
+ * @param {Date} baselineAnnualDate [Optional] The starting date to define 'PREVIOUS'.
+ * If this value is, as by default, null, all targetDate dates before the baselineDate will be labeled 'PREVIOUS'.
+ * If a valid date is defined, all targetDate dates before this value will be labeled 'NA'.
+ * @returns {array} [status, yearMonth], where the status is 'PREVIOUS', 'CURRENT', or 'NA' and yearMonth is a string of 'yyyy-MM'.
  */
-function dateStatus_(targetDate, baselineDate, timezone = Session.getScriptTimeZone()) {
+function dateStatus_(targetDate, baselineDate, timezone = Session.getScriptTimeZone(), baselineAnnualDate = null) {
   let status = (targetDate.getTime() >= baselineDate.getTime() ? 'CURRENT' : 'PREVIOUS');
+  if (baselineAnnualDate && status == 'PREVIOUS') {
+    status = (targetDate.getTime() < baselineAnnualDate.getTime() ? 'NA' : status);
+  }
   // convert previous year's year-month into current year's corresponding months for aggregation
-  // assuming column index 12 is YEAR-MONTH
   let yearMonthAggPre = Utilities.formatDate(targetDate, timezone, 'yyyy-MM');
-  let yearMonthAgg = (status == 'PREVIOUS' ? `${parseInt(yearMonthAggPre.slice(0, 4)) + 1}-${yearMonthAggPre.slice(-2)}` : yearMonthAggPre);
+  let yearMonthAgg = (status == 'PREVIOUS' || status == 'NA' ? `${parseInt(yearMonthAggPre.slice(0, 4)) + 1}-${yearMonthAggPre.slice(-2)}` : yearMonthAggPre);
   return [status, yearMonthAgg];
 }
