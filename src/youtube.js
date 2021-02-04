@@ -973,7 +973,13 @@ function createYouTubeAnalyticsSummary() {
           let channelId = element[1];
           return thisDate.getTime() <= targetPeriodEnd.getTime() && channelId == targetChannelId;
         });
-        videoAnalyticsData = videoAnalyticsDataFull.filter(element => element[1] == targetChannelId); // Assuming that the second column of the video analytics data table is the channel ID
+        videoAnalyticsData = videoAnalyticsDataFull.filter(element => {
+          // Assuming that the first column of the video analytics data table is the date
+          let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
+          // Assuming that the second column of the video analytics data table is the channel ID
+          let channelId = element[1];
+          return thisDate.getTime() <= targetPeriodEnd.getTime() && channelId == targetChannelId;
+        });
       } else {
         continue;
       }
