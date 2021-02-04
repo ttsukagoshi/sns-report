@@ -1,6 +1,6 @@
 // MIT License
 // 
-// Copyright (c) 2020 Taro TSUKAGOSHI
+// Copyright (c) 2021 Taro TSUKAGOSHI
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -214,8 +214,11 @@ function onOpen() {
  * @return {string} Standarized error message
  */
 function errorMessage_(e) {
+  return e.stack;
+  /*
   let message = `Error: line - ${e.lineNumber}\n${e.stack}`;
   return message;
+  */
 }
 
 /**

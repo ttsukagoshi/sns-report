@@ -1,5 +1,5 @@
 # SNS Report
-[![GitHub Super-Linter](https://github.com/ttsukagoshi/sns-report/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)  
+[![GitHub Super-Linter](https://github.com/ttsukagoshi/sns-report/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter) [![Total alerts](https://img.shields.io/lgtm/alerts/g/ttsukagoshi/sns-report.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ttsukagoshi/sns-report/alerts/)  
 Get performance data from SNS platforms using their respective APIs and Google Apps Script
 
 ## YouTube

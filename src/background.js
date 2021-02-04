@@ -1,6 +1,6 @@
 // MIT License
 // 
-// Copyright (c) 2020 Taro TSUKAGOSHI
+// Copyright (c) 2021 Taro TSUKAGOSHI
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,14 @@
  * Periodically update analytics data using Google Apps Script's trigger.
  */
 function weeklyAnalyticsUpdate() {
+  console.log('[weeklyAnalyticsUpdate] Initiating: A periodical task to update analytics data using Google Apps Script\'s trigger...'); // log
   var muteUiAlert = true;
   var muteMailNotification = false;
-  updateYouTubeAnalyticsData(muteUiAlert, muteMailNotification);
+  var yearLimit = false;
+  try {
+    updateYouTubeAnalyticsData(muteUiAlert, muteMailNotification, yearLimit);
+    console.log('[weeklyAnalyticsUpdate] Complete: Periodical task to update analytics data using Google Apps Script\'s trigger is complete.'); // log
+  } catch (error) {
+    console.log('[weeklyAnalyticsUpdate] Terminated.'); // log
+  }
 }
