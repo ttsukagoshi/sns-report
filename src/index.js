@@ -333,13 +333,13 @@ function spreadsheetUrl_(spreadsheetListName, targetYear, platform, options = {}
 
 /**
  * Enter log on designated spreadsheet.
- * @param {string} spreadsheetId ID of spreadsheet to enter log.
+ * @param {string} spreadsheetUrl URL of spreadsheet to enter log.
  * @param {string} sheetName Name of log sheet.
  * @param {string} logMessage Log message
  * @param {Date} timestamp [Optional] Date object for timestamp. If omitted, enters the time of execution.
  */
-function enterLog_(spreadsheetId, sheetName, logMessage, timestamp = new Date()) {
-  var targetSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
+function enterLog_(spreadsheetUrl, sheetName, logMessage, timestamp = new Date()) {
+  var targetSpreadsheet = SpreadsheetApp.openByUrl(spreadsheetUrl);
   var timestampString = formattedDate_(timestamp, targetSpreadsheet.getSpreadsheetTimeZone());
   targetSpreadsheet.getSheetByName(sheetName).appendRow([timestampString, logMessage]);
 }

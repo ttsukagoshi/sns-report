@@ -136,12 +136,14 @@ function updateAllYouTubeList() {
 function updateYouTubeSummaryChannelList(muteUiAlert = false) {
   console.info('[updateYouTubeSummaryChannelList] Initiating: Listing the authorized user\'s channel(s) on the summary spreadsheet...'); // log
   console.info(`[updateYouTubeSummaryChannelList] UI alert is ${muteUiAlert ? 'muted' : 'not muted'}.`); // log
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
-  var timeZone = ss.getSpreadsheetTimeZone();
   var ui = SpreadsheetApp.getUi();
-  var scriptProperties = PropertiesService.getScriptProperties().getProperties();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var timeZone = ss.getSpreadsheetTimeZone();
+  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var config = getConfig_();
+  var scriptProperties = PropertiesService.getScriptProperties().getProperties();
+  var spreadsheetList = getSpreadsheetList_(config.SHEET_NAME_SPREADSHEET_LIST);
+  var targetSpreadsheetUrl = spreadsheetList.filter(value => (value.YEAR == scriptProperties.ytCurrentYear && value.PLATFORM == 'YouTube'))[0].URL;
   var now = new Date();
   try {
     // Get list of channel(s)
@@ -174,11 +176,11 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     myChannelsSheet.getRange(2, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from the 2nd row of column 1 ('A' column).
       .setValues(channelList);
     //// Add row(s) to current spreadsheet of this year
-    let currentSheet = SpreadsheetApp.openById(scriptProperties.currentSpreadsheetId).getSheetByName(config.SHEET_NAME_MY_CHANNELS);
+    let currentSheet = SpreadsheetApp.openByUrl(targetSpreadsheetUrl).getSheetByName(config.SHEET_NAME_MY_CHANNELS);
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, channelList.length, channelList[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
       .setValues(channelList);
     // Log & Notify
-    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, localizedMessages.messageList.youtube.updatedChannelListLog, now);
+    enterLog_(targetSpreadsheetUrl, LOG_SHEET_NAME, localizedMessages.messageList.youtube.updatedChannelListLog, now);
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.youtube.updatedChannelListAlert, ui.ButtonSet.OK);
     }
@@ -186,7 +188,7 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
     return channelList;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, message, now);
+    enterLog_(targetSpreadsheetUrl, LOG_SHEET_NAME, message, now);
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.error.errorTitle, message, ui.ButtonSet.OK);
     }
@@ -204,12 +206,14 @@ function updateYouTubeSummaryChannelList(muteUiAlert = false) {
 function updateYouTubeSummaryVideoList(muteUiAlert = false) {
   console.info('[updateYouTubeSummaryVideoList] Initiating: Listing the authorized user\'s video(s) on the summary spreadsheet...'); // log
   console.info(`[updateYouTubeSummaryVideoList] UI alert is ${muteUiAlert ? 'muted' : 'not muted'}.`); // log
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
-  var timeZone = ss.getSpreadsheetTimeZone();
   var ui = SpreadsheetApp.getUi();
-  var scriptProperties = PropertiesService.getScriptProperties().getProperties();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var timeZone = ss.getSpreadsheetTimeZone();
+  var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   var config = getConfig_();
+  var scriptProperties = PropertiesService.getScriptProperties().getProperties();
+  var spreadsheetList = getSpreadsheetList_(config.SHEET_NAME_SPREADSHEET_LIST);
+  var targetSpreadsheetUrl = spreadsheetList.filter(value => (value.YEAR == scriptProperties.ytCurrentYear && value.PLATFORM == 'YouTube'))[0].URL;
   var now = new Date();
   try {
     // Get list of video(s)
@@ -270,11 +274,11 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
     myVideosSheet.getRange(2, 1, videoList.length, videoList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
       .setValues(videoList);
     //// Add row(s) to current spreadsheet of this year
-    let currentSheet = SpreadsheetApp.openById(scriptProperties.currentSpreadsheetId).getSheetByName(config.SHEET_NAME_MY_VIDEOS);
+    let currentSheet = SpreadsheetApp.openByUrl(targetSpreadsheetUrl).getSheetByName(config.SHEET_NAME_MY_VIDEOS);
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, videoList.length, videoList[0].length) // Assuming that table body to which the list is copied starts from the 4th row of column 1 ('A' column).
       .setValues(videoList);
     // Log & Notify
-    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, localizedMessages.messageList.youtube.updatedVideoListLog, now);
+    enterLog_(targetSpreadsheetUrl, LOG_SHEET_NAME, localizedMessages.messageList.youtube.updatedVideoListLog, now);
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.youtube.updatedVideoListAlert, ui.ButtonSet.OK);
     }
@@ -282,7 +286,7 @@ function updateYouTubeSummaryVideoList(muteUiAlert = false) {
     return videoList;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(scriptProperties.currentSpreadsheetId, LOG_SHEET_NAME, message, now);
+    enterLog_(targetSpreadsheetUrl, LOG_SHEET_NAME, message, now);
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.general.error.errorTitle, message, ui.ButtonSet.OK);
     }
@@ -470,7 +474,6 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
     if (changeOfYear) {
       console.warn('[updateYouTubeAnalyticsData] Change of year detected. Checking to see if new files need to be created...'); // log
       let config = getConfig_();
-      let spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
       let options = {
         createNewFile: true,
         driveFolderId: scriptProperties.driveFolderId,
@@ -484,7 +487,7 @@ function updateYouTubeAnalyticsData(muteUiAlert = false, muteMailNotification = 
       while (year <= now.getFullYear()) {
         options['newFileNameSuffix'] = ` ${year}`;
         // Check for existing spreadsheet(s) and create a new one if there are no matches.
-        let newFileUrl = spreadsheetUrl_(spreadsheetListName, year, 'YouTube', options); // spreadsheetUrl_() is defined on index.js
+        let newFileUrl = spreadsheetUrl_(config.SHEET_NAME_SPREADSHEET_LIST, year, 'YouTube', options); // spreadsheetUrl_() is defined on index.js
         youtubeAnalyticsChannel(year, yearLimit);
         youtubeAnalyticsDemographics(year, yearLimit);
         youtubeAnalyticsVideo(year, yearLimit);
@@ -584,14 +587,14 @@ function youtubeAnalyticsChannel(targetYear, yearLimit = true) {
       updatedLatestDateObj.latestDateOnSpreadsheet = getLatestDate_(targetSheet, 1);
       updatedLatestDateObj.latestDateReturned = yMd2Date_(data.latest);
       // Log
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.replaceUpdatedYouTubeChannelAnalyticsLog(startDate, formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)), now);
+      enterLog_(targetSpreadsheet.getUrl(), LOG_SHEET_NAME, localizedMessages.replaceUpdatedYouTubeChannelAnalyticsLog(startDate, formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)), now);
     } else {
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.messageList.youtube.noUpdatesForYouTubeChannelAnalyticsLog, now);
+      enterLog_(targetSpreadsheet.getUrl(), LOG_SHEET_NAME, localizedMessages.messageList.youtube.noUpdatesForYouTubeChannelAnalyticsLog, now);
     }
     return updatedLatestDateObj;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
+    enterLog_(targetSpreadsheet.getUrl(), LOG_SHEET_NAME, message, now);
     throw error;
   }
 }
@@ -685,11 +688,11 @@ function youtubeAnalyticsDemographics(targetYear, yearLimit = true) {
     // Copy on spreadsheet
     targetSheet.getRange(2, 1, existingDataUpdate.length, existingDataUpdate[0].length).setValues(existingDataUpdate); // Assuming that the 1st row of the targetSheet is header row and that the actual data starts from the 2nd row
     // Log
-    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.replaceUpdatedYouTubeChannelDemographicsLog(latestMonth, thisYearMonth), now);
+    enterLog_(targetSpreadsheet.getUrl(), LOG_SHEET_NAME, localizedMessages.replaceUpdatedYouTubeChannelDemographicsLog(latestMonth, thisYearMonth), now);
     return thisYearMonth;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
+    enterLog_(targetSpreadsheet.getUrl(), LOG_SHEET_NAME, message, now);
     throw error;
   }
 }
@@ -766,14 +769,14 @@ function youtubeAnalyticsVideo(targetYear, yearLimit = true) {
       updatedLatestDateObj.latestDateOnSpreadsheet = getLatestDate_(targetSheet, 1);
       updatedLatestDateObj.latestDateReturned = yMd2Date_(data.latest);
       // Log
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.replaceUpdatedYouTubeVideoAnalyticsLog(startDate, formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)), now);
+      enterLog_(targetSpreadsheet.getUrl(), LOG_SHEET_NAME, localizedMessages.replaceUpdatedYouTubeVideoAnalyticsLog(startDate, formattedDateAnalytics_(updatedLatestDateObj.latestDateOnSpreadsheet)), now);
     } else {
-      enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, localizedMessages.messageList.youtube.noUpdatesForYouTubeVideoAnalyticsLog, now);
+      enterLog_(targetSpreadsheet.getUrl(), LOG_SHEET_NAME, localizedMessages.messageList.youtube.noUpdatesForYouTubeVideoAnalyticsLog, now);
     }
     return updatedLatestDateObj;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(targetSpreadsheet.getId(), LOG_SHEET_NAME, message, now);
+    enterLog_(targetSpreadsheet.getUrl(), LOG_SHEET_NAME, message, now);
     throw error;
   }
 }
@@ -998,11 +1001,11 @@ function createYouTubeAnalyticsSummary() {
       } else {
         // Assuming that the first column of the channel analytics data table is the date
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-        let [ytCurrentYear, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone, targetPeriodStart);
+        let [ytStatus, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone, targetPeriodStart);
         let dislikesInv = -parseInt(element[4]); // Invert postive counts of dislikes to negative for better visualization
         let subscribersTotal = parseInt(element[5]) - parseInt(element[6]); // [SUBSCRIBERS GAINED] - [SUBSCRIBERS LOST]
         // Add column(s) to the original data
-        let concatElement = element.concat([ytCurrentYear, yearMonthAgg, dislikesInv, subscribersTotal]);
+        let concatElement = element.concat([ytStatus, yearMonthAgg, dislikesInv, subscribersTotal]);
         return concatElement;
       }
     });
@@ -1016,9 +1019,9 @@ function createYouTubeAnalyticsSummary() {
         let estimatedSecWatchedLatest = element[8] * 60; // Convert [ESTIMATED MINUTES WATCHED] into seconds
         // Assuming that the first column of the channel analytics data table is the date
         let thisDate = new Date(element[0].slice(0, 4), parseInt(element[0].slice(5, 7)) - 1, element[0].slice(-2));
-        let [ytCurrentYear, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone, targetPeriodStart);
+        let [ytStatus, yearMonthAgg] = dateStatus_(thisDate, reportPeriodStart, ssTimeZone, targetPeriodStart);
         // Add column(s) to the original data
-        let concatElement = element.concat([dislikesInv, subscribersTotal, estimatedSecWatchedLatest, ytCurrentYear, yearMonthAgg]);
+        let concatElement = element.concat([dislikesInv, subscribersTotal, estimatedSecWatchedLatest, ytStatus, yearMonthAgg]);
         return concatElement;
       }
     });
