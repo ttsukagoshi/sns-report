@@ -21,8 +21,8 @@ on:
       - '**/**.md'
       - 'src/_OAuth2.js'
       - 'src/_test.js'
-  schedule:
-    - cron: '45 0 * * 0'
+  # schedule:
+  #   - cron: '45 0 * * 0'
 
 jobs:
   analyze:
