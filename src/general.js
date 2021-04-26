@@ -19,6 +19,7 @@
 
 const LOG_SHEET_NAME = '99_Log';
 const GITHUB_URL = 'https://github.com/ttsukagoshi/sns-report';
+const CACHE_EXP_SECONDS = 60 * 60; // Cache expiration time in seconds for Apps Script Cache Service
 
 /**
  * onOpen()
@@ -347,7 +348,7 @@ function spreadsheetUrl_(spreadsheetListName, targetYear, platform, options = {}
     let newRow = [targetYear, platform, newFileName, newFileUrl];
     SpreadsheetApp.getActiveSpreadsheet().getSheetByName(spreadsheetListName).appendRow(newRow);
     // Add log to the new file
-    enterLog_(SpreadsheetApp.openByUrl(newFileUrl).getId(), LOG_SHEET_NAME, 'Spreadsheet created.');
+    enterLog_(newFileUrl, LOG_SHEET_NAME, 'Spreadsheet created.', new Date());
     return { 'url': newFileUrl, 'created': true };
   } else if (options.createNewFile && !options.templateFileId) {
     throw new Error(localizedMessages.messageList.general.error.spreadsheetUrl_.templateFileIdIsMissingInOptions);

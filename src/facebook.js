@@ -18,10 +18,12 @@
 /* global checkYear_, enterLog_, errorMessage_, formattedDate_, getConfig_, LocalizedMessage, LOG_SHEET_NAME, OAuth2, spreadsheetUrl_ */
 
 // Facebook Graph API version to be used
-const FB_API_VERSION = 'v8.0';
+const FB_API_VERSION = 'v10.0';
 // Spreadsheet ID to use as template for creating a new spreadsheet to enter YouTube analytics data
-const FB_NEW_SPREADSHEET_ID = '';///////////////////////////////////
-// Other global variables are defined on index.js
+const FB_NEW_SPREADSHEET_ID = '1VGCqlPWbSERp0GwooaSHE__ny2LFvJDKHTBwaNPFkMw';
+// Key names for saving and retrieving from Apps Script cache service
+const CS_KEY_FB_PAGES = 'fbPagesInfo';
+// Other global variables are defined on general.js
 
 ///////////////////
 // Authorize 認証//
@@ -149,39 +151,47 @@ function getFbGraphData(node, edge = '', fields = []) {
 
 /**
  * Retrieve basic information and page access tokens for the page that the authorized user has access to.
+ * @param {Boolean} forceRefresh Fetches latest data from Facebook regardless of existing cache when true. Defaults to true.
  * @returns {array} Array of objects containing page data
  */
-function getFbPages_() {
-  var node = 'me';
-  var edge = 'accounts';
-  var fields = [
-    'name',
-    'link',
-    'about',
-    'description',
-    'category',
-    'category_list',
-    'emails',
-    'website',
-    'cover',
-    'checkins',
-    'country_page_likes',
-    'fan_count',
-    'access_token',
-    'tasks'
-  ];
-  let pages = JSON.parse(getFbGraphData(node, edge, fields));
-  let pagesData = pages.data.slice();
-  let nextUrl = pages.paging.next || null;
-  while (nextUrl) {
-    let nextResponse = JSON.parse(UrlFetchApp.fetch(nextUrl, {
-      method: 'GET',
-      contentType: 'application/json; charset=UTF-8'
-    }));
-    pagesData = pagesData.concat(nextResponse.data);
-    nextUrl = nextResponse.paging.next || null;
+function getFbPages_(forceRefresh = true) {
+  var cache = CacheService.getUserCache();
+  var fbPagesInfo = cache.get(CS_KEY_FB_PAGES);
+  if (forceRefresh || !fbPagesInfo) {
+    let node = 'me';
+    let edge = 'accounts';
+    let fields = [
+      'name',
+      'link',
+      'about',
+      'description',
+      'category',
+      'category_list',
+      'emails',
+      'website',
+      'cover',
+      'checkins',
+      'country_page_likes',
+      'fan_count',
+      'access_token',
+      'tasks'
+    ];
+    let pages = JSON.parse(getFbGraphData(node, edge, fields));
+    let pagesData = pages.data.slice();
+    let nextUrl = pages.paging.next || null;
+    while (nextUrl) {
+      let nextResponse = JSON.parse(UrlFetchApp.fetch(nextUrl, {
+        method: 'GET',
+        contentType: 'application/json; charset=UTF-8'
+      }));
+      pagesData = pagesData.concat(nextResponse.data);
+      nextUrl = nextResponse.paging.next || null;
+    }
+    cache.put(CS_KEY_FB_PAGES, JSON.stringify(pagesData), CACHE_EXP_SECONDS);
+    return pagesData;
+  } else {
+    return JSON.parse(fbPagesInfo);
   }
-  return pagesData;
 }
 
 /**
@@ -196,7 +206,6 @@ function updateFbSummaryPageList(muteUiAlert = false) {
   var scriptProperties = PropertiesService.getScriptProperties().getProperties();
   var config = getConfig_();
   var fbCurrentYear = parseInt(scriptProperties.fbCurrentYear);
-  var now = new Date();
   var localizedMessages = new LocalizedMessage(ss.getSpreadsheetLocale());
   // Getting the target spreadsheet
   var spreadsheetListName = config.SHEET_NAME_SPREADSHEET_LIST;
@@ -231,9 +240,8 @@ function updateFbSummaryPageList(muteUiAlert = false) {
       let checkins = element.checkins;
       let country_page_likes = element.country_page_likes;
       let fan_count = element.fan_count;
-      let timestamp = formattedDate_(now, timeZone);
       return [
-        timestamp,
+        formattedDate_(new Date(), timeZone),
         num,
         coverUrlFunction,
         coverUrl,
@@ -266,14 +274,14 @@ function updateFbSummaryPageList(muteUiAlert = false) {
     currentSheet.getRange(currentSheet.getLastRow() + 1, 1, pageList.length, pageList[0].length) // Assuming that table body to which the list is copied starts from column 1 ('A' column).
       .setValues(pageList);
     // Log & Notify
-    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, localizedMessages.messageList.facebook.updatedPageListLog, now);
+    enterLog_(spreadsheetUrl, LOG_SHEET_NAME, localizedMessages.messageList.facebook.updatedPageListLog, new Date());
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.general.misc.completedTitle, localizedMessages.messageList.facebook.updatedPageListAlert, ui.ButtonSet.OK);
     }
     return pageList;
   } catch (error) {
     let message = errorMessage_(error);
-    enterLog_(SpreadsheetApp.openByUrl(spreadsheetUrl).getId(), LOG_SHEET_NAME, message, now);
+    enterLog_(spreadsheetUrl, LOG_SHEET_NAME, message, new Date());
     if (!muteUiAlert) {
       ui.alert(localizedMessages.messageList.general.error.errorTitle, message, ui.ButtonSet.OK);
     }
